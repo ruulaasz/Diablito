@@ -1,0 +1,4 @@
+Enviromental Variables
+ - [DEVLIBS] : Root of all the external libraries requiered to compile
+External Dependencies
+ - [DirectXTex] - For loading images into textures

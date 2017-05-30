@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <importproject>../Diablito.sln</importproject>
+    <includedir>
+        <dir name="D:/Files/Diablito/Math/include/"/>
+        <dir name="D:/Files/Diablito/Graphics/include/"/>
+        <dir name="D:/Files/Diablito/Game/include/"/>
+    </includedir>
+    <paths>
+        <dir name="D:/Files/Diablito/Math/source"/>
+        <dir name="D:/Files/Diablito/Graphics/source"/>
+        <dir name="D:/Files/Diablito/Game/source"/>
+    </paths>
+</project>

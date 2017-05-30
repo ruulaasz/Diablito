@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <DirectXTex\DirectXTex.h>
+#include <DirectXTex.h>
 #include <Omicron_Math.h>
 #include <DirectXManager.h>
 #include <ConstantBuffer.h>

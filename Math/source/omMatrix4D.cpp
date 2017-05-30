@@ -165,7 +165,7 @@ namespace OmicronSDK
 
 		*this = MultiplicationMatrix;
 
-		return MultiplicationMatrix;
+		return *this;
 	}
 
 	bool omMatrix4D::operator == (const omMatrix4D& _Matrix4x4)
