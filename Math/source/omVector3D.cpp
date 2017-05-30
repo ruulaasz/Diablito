@@ -168,8 +168,6 @@ namespace OmicronSDK
 
 	float& omVector3D::operator[](const int idx)
 	{
-		if (idx == 0) return X;
-		if (idx == 1) return Y;
-		if (idx == 2) return Z;
+		return (&X)[idx];
 	}
 }
