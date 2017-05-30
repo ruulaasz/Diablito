@@ -93,29 +93,37 @@
     <IntDir>$(SolutionDir)intermediate/$(ProjectName)/$(PlatformTarget)/$(Configuration)/</IntDir>
     <TargetExt>.lib</TargetExt>
     <TargetName>$(ProjectName)d</TargetName>
+    <IncludePath>$(DEVLIBS)assimp/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>$(DEVLIBS)assimp/lib/$(PlatformTarget)/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)lib/$(PlatformTarget)/</OutDir>
     <IntDir>$(SolutionDir)intermediate/$(ProjectName)/$(PlatformTarget)/$(Configuration)/</IntDir>
     <TargetExt>.lib</TargetExt>
+    <IncludePath>$(DEVLIBS)assimp/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>$(DEVLIBS)assimp/lib/$(PlatformTarget)/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)lib/$(PlatformTarget)/</OutDir>
     <IntDir>$(SolutionDir)intermediate/$(ProjectName)/$(PlatformTarget)/$(Configuration)/</IntDir>
     <TargetExt>.lib</TargetExt>
     <TargetName>$(ProjectName)d</TargetName>
+    <IncludePath>$(DEVLIBS)assimp/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>$(DEVLIBS)assimp/lib/$(PlatformTarget)/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)lib/$(PlatformTarget)/</OutDir>
     <IntDir>$(SolutionDir)intermediate/$(ProjectName)/$(PlatformTarget)/$(Configuration)/</IntDir>
     <TargetExt>.lib</TargetExt>
+    <IncludePath>$(DEVLIBS)assimp/include/;$(IncludePath)</IncludePath>
+    <LibraryPath>$(DEVLIBS)assimp/lib/$(PlatformTarget)/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>./include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
@@ -127,7 +135,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib/$(PlatformTarget)/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

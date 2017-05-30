@@ -18,7 +18,7 @@ cbuffer cbWorld : register(b2)
 
 struct VS_INPUT
 {
-	float4 Pos : POSITION;
+	float3 Pos : POSITION;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -32,7 +32,7 @@ PS_INPUT VS(VS_INPUT input)
 {
 	PS_INPUT output = (PS_INPUT)0;
 
-	output.Pos = mul( input.Pos, World );
+	output.Pos = mul( float4(input.Pos, 1.0f), World );
     output.Pos = mul( output.Pos, View );
     output.Pos = mul( output.Pos, Projection);
 

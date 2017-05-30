@@ -43,6 +43,7 @@ Texture g_textureRV;
 
 ConstantBuffer g_indexBuffer;
 ConstantBuffer g_vertexBuffer;
+
 ConstantBuffer g_pCBView;
 ConstantBuffer g_pCBProj;
 ConstantBuffer g_pCBWorld;
@@ -91,19 +92,9 @@ HRESULT InitPipeline()
 	g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, 0, 0);
 	g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, 0, 0);
 
-	// create the input layout object
-	D3D11_INPUT_ELEMENT_DESC ied[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+	hr = g_Graphics.m_vertexShader.m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_Graphics.m_vertexShader.m_shaderBlob);
 
-	UINT numElements = ARRAYSIZE(ied);
-
-	hr = g_Graphics.m_device->CreateInputLayout(ied, numElements, 
-		g_Graphics.m_vertexShader.m_shaderBlob->GetBufferPointer(), 
-		g_Graphics.m_vertexShader.m_shaderBlob->GetBufferSize(), 
-		&g_Graphics.m_vertexShader.m_inputLayout.m_vertexLayout);
+	g_Graphics.m_vertexShader.m_inputLayout.createInputLayout(g_Graphics.m_vertexShader.m_shaderBlob, g_Graphics.m_device);
 
 	if (FAILED(hr))
 	{

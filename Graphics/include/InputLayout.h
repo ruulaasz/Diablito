@@ -11,7 +11,7 @@ public:
 	virtual void init(){};
 	virtual void destroy();
 
-	//HRESULT CreateInputLayoutFromVertexShaderSignature(ID3DBlob* _pVSBlob);//creamos aun layoutarray, 
+	HRESULT CreateInputLayoutFromVertexShaderSignature(ID3DBlob* _pVSBlob);//creamos aun layoutarray, 
 	HRESULT createInputLayout(ID3DBlob* _VSBlob,  ID3D11Device* _device);
 
 	D3D11_INPUT_ELEMENT_DESC* m_layoutArray;
