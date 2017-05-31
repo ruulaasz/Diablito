@@ -19,23 +19,35 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Buffer.h" />
     <ClInclude Include="include\ConstantBuffer.h" />
     <ClInclude Include="include\DirectXManager.h" />
     <ClInclude Include="include\FragmentShader.h" />
+    <ClInclude Include="include\IndexBuffer.h" />
     <ClInclude Include="include\InputLayout.h" />
+    <ClInclude Include="include\Material.h" />
+    <ClInclude Include="include\Mesh.h" />
+    <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\RenderTarget.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\Texture.h" />
+    <ClInclude Include="include\VertexBuffer.h" />
     <ClInclude Include="include\VertexShader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\Buffer.cpp" />
     <ClCompile Include="source\ConstantBuffer.cpp" />
     <ClCompile Include="source\DirectXManager.cpp" />
     <ClCompile Include="source\FragmentShader.cpp" />
+    <ClCompile Include="source\IndexBuffer.cpp" />
     <ClCompile Include="source\InputLayout.cpp" />
+    <ClCompile Include="source\Material.cpp" />
+    <ClCompile Include="source\Mesh.cpp" />
+    <ClCompile Include="source\Model.cpp" />
     <ClCompile Include="source\RenderTarget.cpp" />
     <ClCompile Include="source\Shader.cpp" />
     <ClCompile Include="source\Texture.cpp" />
+    <ClCompile Include="source\VertexBuffer.cpp" />
     <ClCompile Include="source\VertexShader.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -123,7 +135,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>./include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;$(SolutionDir)Math/include/;$(DEVLIBS)DirectXTex/include/</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
@@ -135,8 +147,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>
-      </AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib/$(PlatformTarget)/</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -149,7 +160,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <MinimalRebuild>false</MinimalRebuild>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <AdditionalIncludeDirectories>./include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;$(SolutionDir)Math/include/;$(DEVLIBS)DirectXTex/include/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -169,7 +180,7 @@
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <AdditionalIncludeDirectories>./include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;$(SolutionDir)Math/include/;$(DEVLIBS)DirectXTex/include/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -191,7 +202,7 @@
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <AdditionalIncludeDirectories>./include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;$(SolutionDir)Math/include/;$(DEVLIBS)DirectXTex/include/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

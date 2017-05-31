@@ -3,6 +3,8 @@
 #include <Omicron_Math.h>
 #include <DirectXManager.h>
 #include <ConstantBuffer.h>
+#include <VertexBuffer.h>
+#include <IndexBuffer.h>
 #include <Texture.h>
 
 //define the screen resolution
@@ -41,8 +43,8 @@ HWND g_hWnd = NULL;
 
 Texture g_textureRV;
 
-ConstantBuffer g_indexBuffer;
-ConstantBuffer g_vertexBuffer;
+IndexBuffer g_indexBuffer;
+VertexBuffer g_vertexBuffer;
 
 ConstantBuffer g_pCBView;
 ConstantBuffer g_pCBProj;
@@ -154,7 +156,7 @@ HRESULT InitContent()
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = OurVertices;
 
-	hr = g_vertexBuffer.createConstantBuffer(g_Graphics.m_device, &bd, &InitData);
+	hr = g_vertexBuffer.createBuffer(g_Graphics.m_device, &bd, &InitData);
 	if (FAILED(hr))
 	{
 		MessageBoxW(NULL,
@@ -190,7 +192,7 @@ HRESULT InitContent()
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
 
-	hr = g_indexBuffer.createConstantBuffer(g_Graphics.m_device, &bd, &InitData);
+	hr = g_indexBuffer.createBuffer(g_Graphics.m_device, &bd, &InitData);
 	if (FAILED(hr))
 		return hr;
 
@@ -213,17 +215,17 @@ HRESULT InitContent()
 	bd.ByteWidth = sizeof(CBView);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = g_pCBView.createConstantBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBView.createBuffer(g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBProj);
-	hr = g_pCBProj.createConstantBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBProj.createBuffer(g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBWorld);
-	hr = g_pCBWorld.createConstantBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBWorld.createBuffer(g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 

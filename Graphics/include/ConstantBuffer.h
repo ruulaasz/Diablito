@@ -1,13 +1,12 @@
 #pragma once
-#include <d3d11.h>
+#include "Buffer.h"
 
-class ConstantBuffer
+class ConstantBuffer : public Buffer
 {
-	public:
-		ConstantBuffer();
-		~ConstantBuffer();
+public:
+	ConstantBuffer();
+	~ConstantBuffer();
 
-		ID3D11Buffer* m_buffer;
-
-	HRESULT createConstantBuffer(ID3D11Device* _device, D3D11_BUFFER_DESC* _desc, D3D11_SUBRESOURCE_DATA* _initData = NULL);
+	virtual void init() {};
+	virtual void destroy();
 };

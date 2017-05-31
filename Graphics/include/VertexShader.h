@@ -14,5 +14,3 @@ public:
 
 	HRESULT createVertexShader(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3D11Device* _device);
 };
-
-
