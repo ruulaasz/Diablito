@@ -1,60 +1,33 @@
 #pragma once
-
 #include "FragmentShader.h"
 #include "VertexShader.h"
 #include "RenderTarget.h"
+#include "Texture2D.h"
+#include "GraphicDevice.h"
+#include "GraphicSwapChain.h"
+#include "GraphicDeviceContext.h"
+#include "GraphicDepthStencilView.h"
+#include "GraphicSamplerState.h"
+#include "GraphicViewport.h"
 
-class GraphicDevice
-{
- public:
-	void* getPtr() const {
-		return m_device;
-	}
-
-	void** getReference() {
-		return &m_device;
-	}
-
-	void Release()
-	{
-		if (m_device)
-		{
-			m_device = NULL;
-		}
-	}
-
-	GraphicDevice()
-	{
-		m_device = NULL;
-	}
-
-	~GraphicDevice()
-	{
-		Release();
-	}
-	
- private:
-	void* m_device;
-};
-
-class DirectXManager
+class GraphicManager
 {
 public:
-	DirectXManager();
-	~DirectXManager();
+	GraphicManager();
+	~GraphicManager();
 
-	IDXGISwapChain* m_swapchain;					// the pointer to the swap chain interface
+	GraphicSwapChain m_swapchain;					// the pointer to the swap chain interface
 	GraphicDevice m_device;							// the pointer to our Direct3D device interface
-	ID3D11DeviceContext* m_deviceContext;			// the pointer to our Direct3D device context
+	GraphicDeviceContext m_deviceContext;			// the pointer to our Direct3D device context
 	RenderTarget m_renderTarget;					// global declaration
 	VertexShader m_vertexShader;					// the vertex shader
 	FragmentShader m_pixelShader;					// the pixel shader
-	D3D_DRIVER_TYPE m_driverType = D3D_DRIVER_TYPE_NULL;
-	D3D_FEATURE_LEVEL m_featureLevel = D3D_FEATURE_LEVEL_11_0;
-	ID3D11Texture2D* m_depthStencil = NULL;
-	ID3D11DepthStencilView* m_depthStencilView = NULL;
-	ID3D11SamplerState* m_samplerState = NULL;
-	D3D11_VIEWPORT m_viewport;
+	unsigned int m_driverType;
+	D3D_FEATURE_LEVEL m_featureLevel;
+	Texture2D m_depthStencil;
+	GraphicDepthStencilView m_depthStencilView;
+	GraphicSamplerState m_samplerState;
+	GraphicViewport m_viewport;
 
 	UINT m_width;
 	UINT m_height;
@@ -67,4 +40,3 @@ public:
 	void clearScreen(RenderTarget* _renderTarget, float _color[4] = {});
 	void cleanDevice();
 };
-

@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <DirectXTex.h>
 #include <Omicron_Math.h>
-#include <DirectXManager.h>
+#include <GraphicManager.h>
 #include <ConstantBuffer.h>
 #include <VertexBuffer.h>
 #include <IndexBuffer.h>
@@ -40,7 +40,7 @@ struct CBWorld
 };
 
 // global declarations
-DirectXManager g_Graphics;
+GraphicManager g_Graphics;
 
 HINSTANCE g_hInst = NULL;
 HWND g_hWnd = NULL;
@@ -69,6 +69,11 @@ using std::vector;
 vector<Model*> g_ModelList;
 
 ID3D11Device* g_pD3DDevice;
+IDXGISwapChain* g_pSwapChain;
+ID3D11DeviceContext* g_pDeviceContext;
+ID3D11DepthStencilView* g_pDepthStencilView;
+ID3D11SamplerState* g_pSamplerState;
+D3D11_VIEWPORT* g_pViewport;
 
 // this function initializes and prepares Direct3D for use
 HRESULT InitD3D(HWND hWnd)
@@ -87,14 +92,20 @@ HRESULT InitD3D(HWND hWnd)
 	if (FAILED(hr))
 		return hr;
 
+	g_pD3DDevice = reinterpret_cast<ID3D11Device*>(g_Graphics.m_device.getPtr());
+	g_pSwapChain = reinterpret_cast<IDXGISwapChain*>(g_Graphics.m_swapchain.getPtr());
+	g_pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(g_Graphics.m_deviceContext.getPtr());
+	g_pDepthStencilView = reinterpret_cast<ID3D11DepthStencilView*>(g_Graphics.m_depthStencilView.getPtr());
+	g_pSamplerState= reinterpret_cast<ID3D11SamplerState*>(g_Graphics.m_samplerState.getPtr());
+
 	// set the render target as the back buffer
-	g_Graphics.m_deviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, g_Graphics.m_depthStencilView);
+	g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, g_pDepthStencilView);
 
 	g_Graphics.setViewport();
 
-	g_Graphics.m_deviceContext->RSSetViewports(1, &g_Graphics.m_viewport);
+	g_pViewport = reinterpret_cast<D3D11_VIEWPORT*>(g_Graphics.m_viewport.getPtr());
 
-	g_pD3DDevice = reinterpret_cast<ID3D11Device*>(g_Graphics.m_device.getPtr());
+	g_pDeviceContext->RSSetViewports(1, g_pViewport);
 
 	return hr;
 }
@@ -107,8 +118,8 @@ HRESULT InitPipeline()
 	hr = g_Graphics.m_pixelShader.createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_pD3DDevice);
 
 	// set the shader objects
-	g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, 0, 0);
-	g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, 0, 0);
+	g_pDeviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, 0, 0);
+	g_pDeviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, 0, 0);
 
 	hr = g_Graphics.m_vertexShader.m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_Graphics.m_vertexShader.m_shaderBlob);
 
@@ -172,7 +183,7 @@ HRESULT InitContent()
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = OurVertices;
 
-	hr = g_vertexBuffer.createBuffer(g_pD3DDevice, &bd, &InitData);
+	hr = g_vertexBuffer.createDirectX(&g_Graphics.m_device, &bd, &InitData);
 	if (FAILED(hr))
 	{
 		MessageBoxW(NULL,
@@ -208,7 +219,7 @@ HRESULT InitContent()
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
 
-	hr = g_indexBuffer.createBuffer(g_pD3DDevice, &bd, &InitData);
+	hr = g_indexBuffer.createDirectX(&g_Graphics.m_device, &bd, &InitData);
 	if (FAILED(hr))
 		return hr;
 
@@ -222,7 +233,7 @@ HRESULT InitContent()
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = g_pD3DDevice->CreateSamplerState(&sampDesc, &g_Graphics.m_samplerState);
+	hr = g_pD3DDevice->CreateSamplerState(&sampDesc, &g_pSamplerState);
 	if (FAILED(hr))
 		return hr;
 
@@ -231,17 +242,17 @@ HRESULT InitContent()
 	bd.ByteWidth = sizeof(CBView);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = g_pCBView.createBuffer(g_pD3DDevice, &bd);
+	hr = g_pCBView.createDirectX(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBProj);
-	hr = g_pCBProj.createBuffer(g_pD3DDevice, &bd);
+	hr = g_pCBProj.createDirectX(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBWorld);
-	hr = g_pCBWorld.createBuffer(g_pD3DDevice, &bd);
+	hr = g_pCBWorld.createDirectX(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
@@ -286,7 +297,7 @@ bool LoadScene(std::string& pFile)
 	}
 
 	//Carguemos meshes
-	VertexInfo myVertex;
+	VertexData myVertex;
 	Model* pModel = new StaticModel();
 	pModel->m_meshes.resize(g_scene->mNumMeshes);
 
@@ -456,11 +467,11 @@ void RenderFrame(void)
 	
 	CBView cbView;
 	cbView.mView = Math::Transpose(g_View);
-	g_Graphics.m_deviceContext->UpdateSubresource(g_pCBView.m_buffer, 0, NULL, &cbView, 0, 0);
+	g_pDeviceContext->UpdateSubresource(g_pCBView.m_buffer, 0, NULL, &cbView, 0, 0);
 
 	CBProj cbProj;
 	cbProj.mProjection = Math::Transpose(g_Projection);
-	g_Graphics.m_deviceContext->UpdateSubresource(g_pCBProj.m_buffer, 0, NULL, &cbProj, 0, 0);
+	g_pDeviceContext->UpdateSubresource(g_pCBProj.m_buffer, 0, NULL, &cbProj, 0, 0);
 
 	// Rotate cube around the origin
 	g_World = Math::Identity4D();
@@ -469,7 +480,7 @@ void RenderFrame(void)
 	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
 
-	g_Graphics.m_deviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	//g_Graphics.m_deviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_inputLayout);
 
@@ -483,23 +494,23 @@ void RenderFrame(void)
 	// Update variables that change once per frame
 	CBWorld cbWorld;
 	cbWorld.mWorld = Math::Transpose(g_World);
-	g_Graphics.m_deviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
+	g_pDeviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
 
 	//g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
-	g_Graphics.m_deviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
-	g_Graphics.m_deviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
-	g_Graphics.m_deviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
 
 	//g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
 	//g_Graphics.m_deviceContext->PSSetShaderResources(0, 1, &g_textureRV.m_texture);
-	g_Graphics.m_deviceContext->PSSetSamplers(0, 1, &g_Graphics.m_samplerState);
+	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
 
-	g_ModelList.at(0)->render(g_Graphics.m_deviceContext);
+	g_ModelList.at(0)->render(g_pDeviceContext);
 
 	//g_Graphics.m_deviceContext->DrawIndexed(36, 0, 0);
 
 	// switch the back buffer and the front buffer
-	g_Graphics.m_swapchain->Present(0, 0);
+	g_pSwapChain->Present(0, 0);
 }
 
 // this is the main message handler for the program
@@ -517,9 +528,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	} break;
 
 	case WM_SIZE:
-		if (g_Graphics.m_swapchain)
+		if (g_pSwapChain)
 		{
-			g_Graphics.m_deviceContext->OMSetRenderTargets(0, 0, 0);
+			g_pDeviceContext->OMSetRenderTargets(0, 0, 0);
 
 			// Release all outstanding references to the swap chain's buffers.
 			g_Graphics.m_renderTarget.m_renderTarget->Release();
@@ -527,13 +538,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			HRESULT hr;
 			// Preserve the existing buffer count and format.
 			// Automatically choose the width and height to match the client rect for HWNDs.
-			hr = g_Graphics.m_swapchain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
+			hr = g_pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
 
 			// Perform error handling here!
 
 			// Get buffer and create a render-target-view.
 			ID3D11Texture2D* pBuffer;
-			hr = g_Graphics.m_swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D),
+			hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
 				(void**)&pBuffer);
 			// Perform error handling here!
 
@@ -542,12 +553,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			// Perform error handling here!
 			pBuffer->Release();
 
-			g_Graphics.m_deviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, NULL);
+			g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, NULL);
 
 			// Set up the viewport.
 			g_Graphics.setViewport();
 
-			g_Graphics.m_deviceContext->RSSetViewports(1, &g_Graphics.m_viewport);
+			g_pDeviceContext->RSSetViewports(1, g_pViewport);
 		}
 		return 1;
 	}

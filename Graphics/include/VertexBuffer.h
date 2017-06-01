@@ -9,19 +9,19 @@ using namespace OmicronSDK;
 
 class GraphicDevice;
 
-struct VertexInfo
+struct VertexData
 {
 	omVector4D pos;
 	omVector2D tex;
 	omVector3D norm;
 
-	VertexInfo()
+	VertexData()
 	{
-		memset(this, 0, sizeof(VertexInfo));
+		memset(this, 0, sizeof(VertexData));
 	}
 
-	VertexInfo(const VertexInfo& other) {
-		memcpy(this, &other, sizeof(VertexInfo));
+	VertexData(const VertexData& other) {
+		memcpy(this, &other, sizeof(VertexData));
 	}
 };
 
@@ -41,13 +41,12 @@ public:
 
 	virtual void destroy() override;
 
-	HRESULT loadVertexFromMesh(aiMesh& _mesh);
+	//HRESULT loadVertexFromMesh(aiMesh& _mesh);
 	HRESULT create(const GraphicDevice* pDevice, unsigned int creationFlags = VB_CREATE_DEFAULT | CPU_ACCESS_DEFAULT);
 
-	void addVertex(VertexInfo);
+	void addVertex(VertexData _vertex);
 	size_t getVertexSize() { return m_vertexInfo.size(); }
 
 private:
-	vector<VertexInfo> m_vertexInfo;
+	vector<VertexData> m_vertexInfo;
 };
-

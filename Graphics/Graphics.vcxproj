@@ -21,8 +21,14 @@
   <ItemGroup>
     <ClInclude Include="include\Buffer.h" />
     <ClInclude Include="include\ConstantBuffer.h" />
-    <ClInclude Include="include\DirectXManager.h" />
     <ClInclude Include="include\FragmentShader.h" />
+    <ClInclude Include="include\GraphicDepthStencilView.h" />
+    <ClInclude Include="include\GraphicDevice.h" />
+    <ClInclude Include="include\GraphicDeviceContext.h" />
+    <ClInclude Include="include\GraphicManager.h" />
+    <ClInclude Include="include\GraphicSamplerState.h" />
+    <ClInclude Include="include\GraphicSwapChain.h" />
+    <ClInclude Include="include\GraphicViewport.h" />
     <ClInclude Include="include\IndexBuffer.h" />
     <ClInclude Include="include\InputLayout.h" />
     <ClInclude Include="include\Material.h" />
@@ -32,14 +38,21 @@
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\StaticModel.h" />
     <ClInclude Include="include\Texture.h" />
+    <ClInclude Include="include\Texture2D.h" />
     <ClInclude Include="include\VertexBuffer.h" />
     <ClInclude Include="include\VertexShader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Buffer.cpp" />
     <ClCompile Include="source\ConstantBuffer.cpp" />
-    <ClCompile Include="source\DirectXManager.cpp" />
     <ClCompile Include="source\FragmentShader.cpp" />
+    <ClCompile Include="source\GraphicDepthStencilView.cpp" />
+    <ClCompile Include="source\GraphicDevice.cpp" />
+    <ClCompile Include="source\GraphicDeviceContext.cpp" />
+    <ClCompile Include="source\GraphicManager.cpp" />
+    <ClCompile Include="source\GraphicSamplerState.cpp" />
+    <ClCompile Include="source\GraphicSwapChain.cpp" />
+    <ClCompile Include="source\GraphicViewport.cpp" />
     <ClCompile Include="source\IndexBuffer.cpp" />
     <ClCompile Include="source\InputLayout.cpp" />
     <ClCompile Include="source\Material.cpp" />
@@ -49,6 +62,7 @@
     <ClCompile Include="source\Shader.cpp" />
     <ClCompile Include="source\StaticModel.cpp" />
     <ClCompile Include="source\Texture.cpp" />
+    <ClCompile Include="source\Texture2D.cpp" />
     <ClCompile Include="source\VertexBuffer.cpp" />
     <ClCompile Include="source\VertexShader.cpp" />
   </ItemGroup>

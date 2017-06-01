@@ -1,5 +1,5 @@
 #include "Mesh.h"
-#include "DirectXManager.h"
+#include "GraphicManager.h"
 
 Mesh::Mesh()
 {
@@ -23,7 +23,7 @@ void Mesh::render(ID3D11DeviceContext * _immediateContext)
 	_immediateContext->PSSetShaderResources(0, 8, m_Material->m_textures);
 
 	//Seteamos el VertexBuffer del mesh
-	UINT stride = sizeof(VertexInfo);
+	UINT stride = sizeof(VertexData);
 	UINT offset = 0;
 	_immediateContext->IASetVertexBuffers(0, 1, &m_VertexBuffer.m_buffer, &stride, &offset);
 
@@ -40,16 +40,11 @@ void Mesh::render(ID3D11DeviceContext * _immediateContext)
 HRESULT Mesh::createMesh(const GraphicDevice* pDevice, const aiMesh& _mesh)
 {
 	HRESULT hr = S_OK;
-	BufferInfo Info;
 
-	hr = m_IndexBuffer.loadIndexFromMesh(const_cast<aiMesh&>(_mesh));
+	//hr = m_IndexBuffer.loadIndexFromMesh(const_cast<aiMesh&>(_mesh));
 	if (hr == S_FALSE)
 		return S_FALSE;
 
-	Info.D3D11Usage = D3D11_USAGE_DEFAULT;
-	Info.ByteWidth = sizeof(unsigned int) * m_IndexBuffer.getIndexSize();
-	Info.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	Info.CPUAccesFlag = 0;
 
 	ID3D11Device* pD3DDevice = reinterpret_cast<ID3D11Device*>(pDevice->getPtr());
 
@@ -57,14 +52,10 @@ HRESULT Mesh::createMesh(const GraphicDevice* pDevice, const aiMesh& _mesh)
 	if (hr == S_FALSE)
 		return S_FALSE;
 
-	hr = m_VertexBuffer.loadVertexFromMesh(const_cast<aiMesh&>(_mesh));
+	//hr = m_VertexBuffer.loadVertexFromMesh(const_cast<aiMesh&>(_mesh));
 	if (hr == S_FALSE)
 		return S_FALSE;
 
-	Info.D3D11Usage = D3D11_USAGE_DEFAULT;
-	Info.ByteWidth = sizeof(VertexInfo) * m_VertexBuffer.getVertexSize();
-	Info.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	Info.CPUAccesFlag = 0;
 
 	m_VertexBuffer.create(pDevice);
 

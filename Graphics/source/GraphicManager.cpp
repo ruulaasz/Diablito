@@ -1,16 +1,17 @@
-#include "DirectXManager.h"
+#include "GraphicManager.h"
 
-DirectXManager::DirectXManager()
+GraphicManager::GraphicManager()
+{
+	m_driverType = D3D_DRIVER_TYPE_NULL;
+	m_featureLevel = D3D_FEATURE_LEVEL_11_0;
+}
+
+GraphicManager::~GraphicManager()
 {
 
 }
 
-DirectXManager::~DirectXManager()
-{
-
-}
-
-HRESULT DirectXManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, UINT _sampleDesc)
+HRESULT GraphicManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, UINT _sampleDesc)
 {
 	HRESULT hr = S_OK;
 
@@ -58,12 +59,14 @@ HRESULT DirectXManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, 
 	sd.Windowed = TRUE;
 	
 	ID3D11Device** pDevice = reinterpret_cast<ID3D11Device**>(m_device.getReference());
+	IDXGISwapChain** pSwapChain = reinterpret_cast<IDXGISwapChain**>(m_swapchain.getReference());
+	ID3D11DeviceContext** pDeviceContext = reinterpret_cast<ID3D11DeviceContext**>(m_deviceContext.getReference());
 
 	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
 	{
 		m_driverType = driverTypes[driverTypeIndex];
-		hr = D3D11CreateDeviceAndSwapChain(NULL, m_driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
-			D3D11_SDK_VERSION, &sd, &m_swapchain, pDevice, &m_featureLevel, &m_deviceContext);
+		hr = D3D11CreateDeviceAndSwapChain(NULL, static_cast<D3D_DRIVER_TYPE>(m_driverType), NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+			D3D11_SDK_VERSION, &sd, pSwapChain, pDevice, &m_featureLevel, pDeviceContext);
 		if (SUCCEEDED(hr))
 			break;
 	}
@@ -71,13 +74,15 @@ HRESULT DirectXManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, 
 	return hr;
 }
 
-HRESULT DirectXManager::createRenderTargetView()
+HRESULT GraphicManager::createRenderTargetView()
 {
 	HRESULT hr = S_OK;
 
+	IDXGISwapChain* pSwapChain = reinterpret_cast<IDXGISwapChain*>(m_swapchain.getPtr());
+
 	// get the address of the back buffer
 	ID3D11Texture2D *pBackBuffer = NULL;
-	hr = m_swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+	hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 	if (FAILED(hr))
 		return hr;
 
@@ -92,7 +97,7 @@ HRESULT DirectXManager::createRenderTargetView()
 	return hr;
 }
 
-HRESULT DirectXManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize, UINT SampleDesc, UINT _CPUAccessFlags, UINT _MiscFlags)
+HRESULT GraphicManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize, UINT SampleDesc, UINT _CPUAccessFlags, UINT _MiscFlags)
 {
 	HRESULT hr = S_OK;
 
@@ -113,7 +118,7 @@ HRESULT DirectXManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize,
 
 	ID3D11Device* pDevice = reinterpret_cast<ID3D11Device*>(m_device.getPtr());
 
-	hr = pDevice->CreateTexture2D(&descDepth, NULL, &m_depthStencil);
+	hr = pDevice->CreateTexture2D(&descDepth, NULL, &m_depthStencil.m_texture);
 	if (FAILED(hr))
 		return hr;
 
@@ -123,39 +128,50 @@ HRESULT DirectXManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize,
 	descDSV.Format = descDepth.Format;
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
-	hr = pDevice->CreateDepthStencilView(m_depthStencil, &descDSV, &m_depthStencilView);
+
+	ID3D11DepthStencilView** pDepthStencilView = reinterpret_cast<ID3D11DepthStencilView**>(m_depthStencilView.getReference());
+
+	hr = pDevice->CreateDepthStencilView(m_depthStencil.m_texture, &descDSV, pDepthStencilView);
 	if (FAILED(hr))
 		return hr;
 
 	return hr;
 }
 
-void DirectXManager::setViewport(FLOAT _MinDepth, FLOAT _MaxDepth, FLOAT _TopLeftX, FLOAT _TopLeftY)
+void GraphicManager::setViewport(FLOAT _MinDepth, FLOAT _MaxDepth, FLOAT _TopLeftX, FLOAT _TopLeftY)
 {
 	// Set the viewport
-	ZeroMemory(&m_viewport, sizeof(D3D11_VIEWPORT));
-	m_viewport.MinDepth = _MinDepth;
-	m_viewport.MaxDepth = _MaxDepth;
-	m_viewport.TopLeftX = _TopLeftX;
-	m_viewport.TopLeftY = _TopLeftY;
-	m_viewport.Width = (float)m_width;
-	m_viewport.Height = (float)m_height;
+
+	D3D11_VIEWPORT* pViewport = reinterpret_cast<D3D11_VIEWPORT*>(m_viewport.getPtr());
+	pViewport = new D3D11_VIEWPORT;
+
+	pViewport->MinDepth = _MinDepth;
+	pViewport->MaxDepth = _MaxDepth;
+	pViewport->TopLeftX = _TopLeftX;
+	pViewport->TopLeftY = _TopLeftY;
+	pViewport->Width = (float)m_width;
+	pViewport->Height = (float)m_height;
+
+	m_viewport.Set(pViewport);
 }
 
-void DirectXManager::clearScreen(RenderTarget* _renderTarget, float _color[4])
+void GraphicManager::clearScreen(RenderTarget* _renderTarget, float _color[4])
 {
-	m_deviceContext->ClearRenderTargetView(_renderTarget->m_renderTarget, _color);
-	m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	ID3D11DeviceContext* pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(m_deviceContext.getPtr());
+	ID3D11DepthStencilView* pDepthStencilView = reinterpret_cast<ID3D11DepthStencilView*>(m_depthStencilView.getPtr());
+
+	pDeviceContext->ClearRenderTargetView(_renderTarget->m_renderTarget, _color);
+	pDeviceContext->ClearDepthStencilView(pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void DirectXManager::cleanDevice()
+void GraphicManager::cleanDevice()
 {
-	if (m_deviceContext) m_deviceContext->ClearState();
+	m_deviceContext.Release();
 	if (m_vertexShader.m_vertexShader) m_vertexShader.m_vertexShader->Release();
 	if (m_pixelShader.m_fragmentShader) m_pixelShader.m_fragmentShader->Release();
-	if (m_depthStencil) m_depthStencil->Release();
-	if (m_depthStencilView) m_depthStencilView->Release();
+	if (m_depthStencil.m_texture) m_depthStencil.m_texture->Release();
+	m_depthStencilView.Release();
 	if (m_renderTarget.m_renderTarget) m_renderTarget.m_renderTarget->Release();
-	if (m_swapchain) m_swapchain->Release();
+	m_swapchain.Release();
 	m_device.Release();
 }

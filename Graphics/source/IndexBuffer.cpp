@@ -1,5 +1,5 @@
 #include "IndexBuffer.h"
-#include "DirectXManager.h"
+#include "GraphicManager.h"
 
 IndexBuffer::IndexBuffer()
 {
@@ -16,29 +16,29 @@ void IndexBuffer::destroy()
 	m_indexArray.clear();
 }
 
-HRESULT IndexBuffer::loadIndexFromMesh(aiMesh & _mesh)
-{
-	if (&_mesh == NULL)
-		return S_FALSE;
-
-	m_indexArray.reserve(_mesh.mNumFaces * 3);
-
-	int l = 0;
-
-	for (int j = 0; j < (int)_mesh.mNumFaces; j++)
-	{
-		for (int k = 0; k < (int)_mesh.mFaces->mNumIndices; k++)
-		{
-			m_indexArray[l] = _mesh.mFaces[j].mIndices[k];
-			l++;
-		}
-	}
-
-	if (m_indexArray.empty())
-		return S_FALSE;
-
-	return S_OK;
-}
+//HRESULT IndexBuffer::loadIndexFromMesh(aiMesh & _mesh)
+//{
+//	if (&_mesh == NULL)
+//		return S_FALSE;
+//
+//	m_indexArray.reserve(_mesh.mNumFaces * 3);
+//
+//	int l = 0;
+//
+//	for (int j = 0; j < (int)_mesh.mNumFaces; j++)
+//	{
+//		for (int k = 0; k < (int)_mesh.mFaces->mNumIndices; k++)
+//		{
+//			m_indexArray[l] = _mesh.mFaces[j].mIndices[k];
+//			l++;
+//		}
+//	}
+//
+//	if (m_indexArray.empty())
+//		return S_FALSE;
+//
+//	return S_OK;
+//}
 
 HRESULT IndexBuffer::create(const GraphicDevice* pDevice, unsigned int creationFlags)
 {

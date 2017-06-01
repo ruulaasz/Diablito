@@ -4,7 +4,7 @@
 
 struct Triangle
 {
-	VertexInfo m_vertex[3];
+	VertexData m_vertex[3];
 
 	Triangle() {}
 };

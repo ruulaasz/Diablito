@@ -1,5 +1,5 @@
 #include "Model.h"
-#include "DirectXManager.h"
+#include "GraphicManager.h"
 
 Model::Model()
 {

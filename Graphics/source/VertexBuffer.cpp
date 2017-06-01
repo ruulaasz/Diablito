@@ -1,5 +1,5 @@
 #include "VertexBuffer.h"
-#include "DirectXManager.h"
+#include "GraphicManager.h"
 
 VertexBuffer::VertexBuffer()
 {
@@ -16,40 +16,40 @@ void VertexBuffer::destroy()
 	m_vertexInfo.clear();
 }
 
-HRESULT VertexBuffer::loadVertexFromMesh(aiMesh & _mesh)
-{
-	if (&_mesh == NULL)
-		return S_FALSE;
-
-	m_vertexInfo.reserve(_mesh.mNumVertices);
-
-	VertexInfo myVertex;
-
-	for (unsigned int i = 0; i < _mesh.mNumVertices; ++i)
-	{
-		myVertex.pos.X = _mesh.mVertices[i].x;
-		myVertex.pos.Y = _mesh.mVertices[i].y;
-		myVertex.pos.Z = _mesh.mVertices[i].z;
-		myVertex.pos.W = 1;
-
-		if (_mesh.HasTextureCoords(0))
-		{
-			myVertex.tex.X = _mesh.mTextureCoords[0][i].x;
-			myVertex.tex.Y = _mesh.mTextureCoords[0][i].y;
-		}
-
-		if (_mesh.HasNormals())
-		{
-			myVertex.norm.X =_mesh.mNormals[i].x;
-			myVertex.norm.Y =_mesh.mNormals[i].y;
-			myVertex.norm.Z =_mesh.mNormals[i].z;
-		}
-
-		addVertex(myVertex);
-	}
-
-	return S_OK;
-}
+//HRESULT VertexBuffer::loadVertexFromMesh(aiMesh & _mesh)
+//{
+//	if (&_mesh == NULL)
+//		return S_FALSE;
+//
+//	m_vertexInfo.reserve(_mesh.mNumVertices);
+//
+//	VertexInfo myVertex;
+//
+//	for (unsigned int i = 0; i < _mesh.mNumVertices; ++i)
+//	{
+//		myVertex.pos.X = _mesh.mVertices[i].x;
+//		myVertex.pos.Y = _mesh.mVertices[i].y;
+//		myVertex.pos.Z = _mesh.mVertices[i].z;
+//		myVertex.pos.W = 1;
+//
+//		if (_mesh.HasTextureCoords(0))
+//		{
+//			myVertex.tex.X = _mesh.mTextureCoords[0][i].x;
+//			myVertex.tex.Y = _mesh.mTextureCoords[0][i].y;
+//		}
+//
+//		if (_mesh.HasNormals())
+//		{
+//			myVertex.norm.X =_mesh.mNormals[i].x;
+//			myVertex.norm.Y =_mesh.mNormals[i].y;
+//			myVertex.norm.Z =_mesh.mNormals[i].z;
+//		}
+//
+//		addVertex(myVertex);
+//	}
+//
+//	return S_OK;
+//}
 
 HRESULT VertexBuffer::create(const GraphicDevice* pDevice, unsigned int creationFlags)
 {
@@ -73,7 +73,7 @@ HRESULT VertexBuffer::create(const GraphicDevice* pDevice, unsigned int creation
 	}
 
 	bd.Usage = static_cast<D3D11_USAGE>(UsageFlag);
-	bd.ByteWidth = m_vertexInfo.size() * sizeof(VertexInfo);
+	bd.ByteWidth = m_vertexInfo.size() * sizeof(VertexData);
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = CPUAccess;
 
@@ -93,7 +93,7 @@ HRESULT VertexBuffer::create(const GraphicDevice* pDevice, unsigned int creation
 	return S_OK;
 }
 
-void VertexBuffer::addVertex(VertexInfo vertex)
+void VertexBuffer::addVertex(VertexData _vertex)
 {
-	m_vertexInfo.push_back(vertex);
+	m_vertexInfo.push_back(_vertex);
 }
