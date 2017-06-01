@@ -1,9 +1,9 @@
 #include "VertexBuffer.h"
+#include "DirectXManager.h"
 
 VertexBuffer::VertexBuffer()
 {
-	m_vertexInfo = NULL;
-	m_vertexNumber = 0;
+	
 }
 
 VertexBuffer::~VertexBuffer()
@@ -13,7 +13,7 @@ VertexBuffer::~VertexBuffer()
 
 void VertexBuffer::destroy()
 {
-	m_vertexInfo = NULL;
+	m_vertexInfo.clear();
 }
 
 HRESULT VertexBuffer::loadVertexFromMesh(aiMesh & _mesh)
@@ -21,53 +21,69 @@ HRESULT VertexBuffer::loadVertexFromMesh(aiMesh & _mesh)
 	if (&_mesh == NULL)
 		return S_FALSE;
 
-	m_vertexInfo = new VertexInfo[_mesh.mNumVertices];
-	m_vertexNumber = _mesh.mNumVertices;
+	m_vertexInfo.reserve(_mesh.mNumVertices);
 
-	for (int i = 0; i < (int)_mesh.mNumVertices; i++)
+	VertexInfo myVertex;
+
+	for (unsigned int i = 0; i < _mesh.mNumVertices; ++i)
 	{
-		m_vertexInfo[i].pos.X = _mesh.mVertices[i].x;
-		m_vertexInfo[i].pos.Y = _mesh.mVertices[i].y;
-		m_vertexInfo[i].pos.Z = _mesh.mVertices[i].z;
-		m_vertexInfo[i].pos.W = 1;
+		myVertex.pos.X = _mesh.mVertices[i].x;
+		myVertex.pos.Y = _mesh.mVertices[i].y;
+		myVertex.pos.Z = _mesh.mVertices[i].z;
+		myVertex.pos.W = 1;
 
 		if (_mesh.HasTextureCoords(0))
 		{
-			m_vertexInfo[i].tex.X = _mesh.mTextureCoords[0][i].x;
-			m_vertexInfo[i].tex.Y = _mesh.mTextureCoords[0][i].y;
+			myVertex.tex.X = _mesh.mTextureCoords[0][i].x;
+			myVertex.tex.Y = _mesh.mTextureCoords[0][i].y;
 		}
-
 
 		if (_mesh.HasNormals())
 		{
-			m_vertexInfo[i].norm.X =_mesh.mNormals[i].x;
-			m_vertexInfo[i].norm.Y =_mesh.mNormals[i].y;
-			m_vertexInfo[i].norm.Z =_mesh.mNormals[i].z;
+			myVertex.norm.X =_mesh.mNormals[i].x;
+			myVertex.norm.Y =_mesh.mNormals[i].y;
+			myVertex.norm.Z =_mesh.mNormals[i].z;
 		}
-	}
 
-	if (!m_vertexInfo)
-		return S_FALSE;
+		addVertex(myVertex);
+	}
 
 	return S_OK;
 }
 
-HRESULT VertexBuffer::createVertexBuffer(ID3D11Device * _device, BufferInfo _info)
+HRESULT VertexBuffer::create(const GraphicDevice* pDevice, unsigned int creationFlags)
 {
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 
-	bd.Usage = _info.D3D11Usage;
-	bd.ByteWidth = _info.ByteWidth;
-	bd.BindFlags = _info.BindFlags;
-	bd.CPUAccessFlags = _info.CPUAccesFlag;
+	unsigned int UsageFlag = D3D11_USAGE_DEFAULT;
+	if (creationFlags & VB_CREATE_STATIC) {
+		UsageFlag = D3D11_USAGE_IMMUTABLE;
+	}
+	if (creationFlags & VB_CREATE_DYNAMIC) {
+		UsageFlag = D3D11_USAGE_DYNAMIC;
+	}
+
+	unsigned int CPUAccess = 0;
+	if (creationFlags & CPU_ACCESS_READ) {
+		UsageFlag = D3D11_CPU_ACCESS_READ;
+	}
+	if (creationFlags & CPU_ACCESS_WRITE) {
+		UsageFlag = D3D11_CPU_ACCESS_WRITE;
+	}
+
+	bd.Usage = static_cast<D3D11_USAGE>(UsageFlag);
+	bd.ByteWidth = m_vertexInfo.size() * sizeof(VertexInfo);
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bd.CPUAccessFlags = CPUAccess;
 
 	D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory(&InitData, sizeof(InitData));
-	InitData.pSysMem = *&m_vertexInfo;
+	InitData.pSysMem = &m_vertexInfo[0];
 
-	if (_device != NULL)
-		_device->CreateBuffer(&bd, &InitData, &m_buffer);
+	ID3D11Device* pD3DDevice = reinterpret_cast<ID3D11Device*>(pDevice->getPtr());
+	if (pDevice &&  pD3DDevice)
+		pD3DDevice->CreateBuffer(&bd, &InitData, &m_buffer);
 	else
 		return S_FALSE;
 
@@ -75,4 +91,9 @@ HRESULT VertexBuffer::createVertexBuffer(ID3D11Device * _device, BufferInfo _inf
 		return S_FALSE;
 
 	return S_OK;
+}
+
+void VertexBuffer::addVertex(VertexInfo vertex)
+{
+	m_vertexInfo.push_back(vertex);
 }

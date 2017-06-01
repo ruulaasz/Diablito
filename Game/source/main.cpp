@@ -1,3 +1,5 @@
+#include <queue>
+#include <tchar.h>
 #include <windows.h>
 #include <DirectXTex.h>
 #include <Omicron_Math.h>
@@ -5,7 +7,9 @@
 #include <ConstantBuffer.h>
 #include <VertexBuffer.h>
 #include <IndexBuffer.h>
-#include <Texture.h>
+#include <Importer.hpp>
+#include <postprocess.h>
+#include <StaticModel.h>
 
 //define the screen resolution
 #define SCREEN_WIDTH  800
@@ -56,6 +60,16 @@ omMatrix4D  g_Projection;
 
 float g_deltaTime = 0.0f;
 
+//Carga de contenido por Assimp
+Assimp::Importer g_importer;
+const aiScene* g_scene;
+
+//lista de modelos cargadas
+using std::vector;
+vector<Model*> g_ModelList;
+
+ID3D11Device* g_pD3DDevice;
+
 // this function initializes and prepares Direct3D for use
 HRESULT InitD3D(HWND hWnd)
 {
@@ -80,6 +94,8 @@ HRESULT InitD3D(HWND hWnd)
 
 	g_Graphics.m_deviceContext->RSSetViewports(1, &g_Graphics.m_viewport);
 
+	g_pD3DDevice = reinterpret_cast<ID3D11Device*>(g_Graphics.m_device.getPtr());
+
 	return hr;
 }
 
@@ -87,8 +103,8 @@ HRESULT InitPipeline()
 {
 	HRESULT hr = S_OK;
 
-	hr = g_Graphics.m_vertexShader.createVertexShader(L"shaders.fx", "VS", "vs_5_0", g_Graphics.m_device);
-	hr = g_Graphics.m_pixelShader.createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_Graphics.m_device);
+	hr = g_Graphics.m_vertexShader.createVertexShader(L"shaders.fx", "VS", "vs_5_0", g_pD3DDevice);
+	hr = g_Graphics.m_pixelShader.createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_pD3DDevice);
 
 	// set the shader objects
 	g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, 0, 0);
@@ -96,7 +112,7 @@ HRESULT InitPipeline()
 
 	hr = g_Graphics.m_vertexShader.m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_Graphics.m_vertexShader.m_shaderBlob);
 
-	g_Graphics.m_vertexShader.m_inputLayout.createInputLayout(g_Graphics.m_vertexShader.m_shaderBlob, g_Graphics.m_device);
+	g_Graphics.m_vertexShader.m_inputLayout.createInputLayout(g_Graphics.m_vertexShader.m_shaderBlob, g_pD3DDevice);
 
 	if (FAILED(hr))
 	{
@@ -156,7 +172,7 @@ HRESULT InitContent()
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = OurVertices;
 
-	hr = g_vertexBuffer.createBuffer(g_Graphics.m_device, &bd, &InitData);
+	hr = g_vertexBuffer.createBuffer(g_pD3DDevice, &bd, &InitData);
 	if (FAILED(hr))
 	{
 		MessageBoxW(NULL,
@@ -192,7 +208,7 @@ HRESULT InitContent()
 	bd.CPUAccessFlags = 0;
 	InitData.pSysMem = indices;
 
-	hr = g_indexBuffer.createBuffer(g_Graphics.m_device, &bd, &InitData);
+	hr = g_indexBuffer.createBuffer(g_pD3DDevice, &bd, &InitData);
 	if (FAILED(hr))
 		return hr;
 
@@ -206,7 +222,7 @@ HRESULT InitContent()
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = g_Graphics.m_device->CreateSamplerState(&sampDesc, &g_Graphics.m_samplerState);
+	hr = g_pD3DDevice->CreateSamplerState(&sampDesc, &g_Graphics.m_samplerState);
 	if (FAILED(hr))
 		return hr;
 
@@ -215,17 +231,17 @@ HRESULT InitContent()
 	bd.ByteWidth = sizeof(CBView);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = g_pCBView.createBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBView.createBuffer(g_pD3DDevice, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBProj);
-	hr = g_pCBProj.createBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBProj.createBuffer(g_pD3DDevice, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBWorld);
-	hr = g_pCBWorld.createBuffer(g_Graphics.m_device, &bd);
+	hr = g_pCBWorld.createBuffer(g_pD3DDevice, &bd);
 	if (FAILED(hr))
 		return hr;
 
@@ -235,7 +251,7 @@ HRESULT InitContent()
 	if (FAILED(hr))
 		return hr;
 
-	hr = DirectX::CreateShaderResourceView(g_Graphics.m_device, Image.GetImages(), Image.GetImageCount(), Image.GetMetadata(), &g_textureRV.m_texture);
+	hr = DirectX::CreateShaderResourceView(g_pD3DDevice, Image.GetImages(), Image.GetImageCount(), Image.GetMetadata(), &g_textureRV.m_texture);
 	if (FAILED(hr))
 		return hr;
 
@@ -243,8 +259,8 @@ HRESULT InitContent()
 	g_World = Math::Identity4D();
 
 	// Initialize the view matrix
-	omVector4D Eye(0.0f, 0.0f, -6.0f, 1.0f);
-	omVector4D At(0.0f, 0.0f, 0.0f, 1.0f);
+	omVector4D Eye(0.0f, 80.0f, -100.0f, 1.0f);
+	omVector4D At(0.0f, 80.0f, 0.0f, 1.0f);
 	omVector4D Up(0.0f, 1.0f, 0.0f, 0.0f);
 
 	g_View = Math::LookAtLH(Eye, At, Up);
@@ -255,7 +271,178 @@ HRESULT InitContent()
 	g_Graphics.m_height = rc.bottom - rc.top;
 
 	// Initialize the projection matrix
-	g_Projection = Math::PerspectiveFovLH(Math::PI / 2.0f, g_Graphics.m_width / (FLOAT)g_Graphics.m_height, 0.01f, 100.0f);
+	g_Projection = Math::PerspectiveFovLH(Math::PI / 2.0f, g_Graphics.m_width / (FLOAT)g_Graphics.m_height, 0.01f, 10000.0f);
+}
+
+bool LoadScene(std::string& pFile)
+{
+	HRESULT HandleResult;
+
+	g_scene = g_importer.ReadFile(pFile, aiProcess_ConvertToLeftHanded);
+
+	if (!g_scene || !g_scene->HasMeshes() )
+	{
+		return false;
+	}
+
+	//Carguemos meshes
+	VertexInfo myVertex;
+	Model* pModel = new StaticModel();
+	pModel->m_meshes.resize(g_scene->mNumMeshes);
+
+	for (size_t i = 0; i < g_scene->mNumMeshes; ++i) 
+	{
+		pModel->m_meshes[i] = new Mesh();
+
+		if (g_scene->mMeshes[i]->HasPositions()) 
+		{
+			for (size_t j = 0; j < g_scene->mMeshes[i]->mNumVertices; ++j) 
+			{
+				aiMesh* paiMesh = g_scene->mMeshes[i];
+				myVertex.pos.X = paiMesh->mVertices[j].x;
+				myVertex.pos.Y = paiMesh->mVertices[j].y;
+				myVertex.pos.Z = paiMesh->mVertices[j].z;
+
+				if (g_scene->mMeshes[i]->HasNormals()) 
+				{
+					myVertex.norm.X = paiMesh->mNormals[j].x;
+					myVertex.norm.Y = paiMesh->mNormals[j].y;
+					myVertex.norm.Z = paiMesh->mNormals[j].z;
+				}
+
+				if (g_scene->mMeshes[i]->HasTextureCoords(0)) 
+				{
+					myVertex.norm.X = paiMesh->mNormals[j].x;
+					myVertex.norm.Y = paiMesh->mNormals[j].y;
+					myVertex.norm.Z = paiMesh->mNormals[j].z;
+				}
+
+				pModel->m_meshes[i]->m_VertexBuffer.addVertex(myVertex);
+			}
+
+			pModel->m_meshes[i]->m_VertexBuffer.create(&g_Graphics.m_device);
+
+			Material* pMaterial = new Material();
+			pMaterial->m_pixelShader = &g_Graphics.m_pixelShader;
+			pMaterial->m_vertexShader = &g_Graphics.m_vertexShader;
+			pMaterial->m_textures[0] = g_textureRV.m_texture;
+
+			pModel->m_meshes[i]->m_Material = pMaterial;
+		}
+
+		if (g_scene->mMeshes[i]->HasFaces())
+		{
+			for (size_t j = 0; j < g_scene->mMeshes[i]->mNumFaces; ++j)
+			{
+				for (size_t k = 0; k < g_scene->mMeshes[i]->mFaces->mNumIndices; k++)
+				{
+					pModel->m_meshes[i]->m_IndexBuffer.addIndex(g_scene->mMeshes[i]->mFaces[j].mIndices[k]);
+				}
+			}
+
+			pModel->m_meshes[i]->m_IndexBuffer.create(&g_Graphics.m_device);
+		}
+	}
+
+	g_ModelList.push_back(pModel);
+
+	/*
+	aiNode* Node;
+	queue<aiNode*>NodeList;
+	queue<aiNode*>NodeWithMesh;
+	NodeList.push(g_scene->mRootNode);
+
+	while (!NodeList.empty())
+	{
+		Node = NodeList.front();
+		//Agregamos los nodos hijos a la lista
+		for (unsigned i = 0; i < Node->mNumChildren; i++)
+		{
+			NodeList.push(*&Node->mChildren[i]);
+		}
+		//Checamos si el visitado actual tiene meshes
+		if (Node->mNumMeshes > 0)
+		{//Los meshes contenidos en este nodo son un modelo
+			NodeWithMesh.push(*&Node);
+		}
+		//Sacamos al nodo visitado
+		NodeList.pop();
+	}
+
+	while (pFile.back() != '\\')
+	{
+		pFile.pop_back();
+	}
+
+	pFile.pop_back();
+
+	while (!NodeWithMesh.empty())
+	{
+		Model* pModel = new StaticModel();
+		
+		Node = NodeWithMesh.front();
+
+		pModel->m_ID.strName = Node->mName.C_Str();
+		pModel->m_ID.Something = reinterpret_cast<void*>(g_Graphics.m_device);
+		pModel->createModel(pFile, *Node, g_scene, g_Graphics.m_device, &g_Graphics.m_vertexShader, &g_Graphics.m_pixelShader);
+		
+		NodeWithMesh.pop();
+
+		g_ModelList.push_back(pModel);
+	}
+	*/
+}
+
+void LoadModelFromFile()
+{
+	OPENFILENAME ofn;
+	TCHAR CurrentDirectory[MAX_PATH];
+	bool bMustLoad = false;
+	memset(&ofn, 0, sizeof(ofn));
+
+	TCHAR* FileName = new TCHAR[MAX_PATH];
+
+	//Obtenemos el directorio actual, pera reestablecerlo cuando lo requiramos
+	GetCurrentDirectory(MAX_PATH, CurrentDirectory);
+
+	//Rellenamos la información de la estructura para establecer la carpeta inicial y los tipos de archivo soportados
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrInitialDir = TEXT("resources\\models");
+	//ofn.lpstrFilter = TEXT("PK3 File\0*.PK3\0All\0*.*\0");
+	ofn.lpstrFile = FileName;
+	ofn.lpstrFile[0] = '\0';
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	//Abrimos el dialogo para seleccionar un archivo
+	if (GetOpenFileName(&ofn))
+	{//El usuario seleccionó un archivo
+		if (_tcslen(FileName) > 0)
+		{//El nombre del archivo no está vacio
+			bMustLoad = true;	//Indicamos que debe cargarse el archivo
+		}
+	}
+
+	//Restablecemos la ruta inicial de la aplicación (esto es porque el diálogo cambia la carpeta de trabajo)
+	//NOTA: Si no hicieramos esto aquí, cualquier próxima carga de archivos sin ruta completa fallará dentro de la aplicación, al igual que las escrituras estarán fuera de lugar
+	SetCurrentDirectory(CurrentDirectory);
+
+	//Revisamos si se debe de cargar un archivo de mapa
+	if (bMustLoad)
+	{//Si debe cargarse, así que mandamos llamar la función del mapa para esto
+
+		string Temp;
+		for (size_t i = 0; FileName[i] != '\0'; i++)
+		{
+			Temp.push_back(FileName[i]);
+		}
+
+		LoadScene(Temp);
+	}
+
+	//Eliminamos el buffer de nombre de archivo
+	OM_DELETE_ARRAY(FileName);
 }
 
 // this is the function used to render a single frame
@@ -277,37 +464,39 @@ void RenderFrame(void)
 
 	// Rotate cube around the origin
 	g_World = Math::Identity4D();
-	g_World = Math::RotationMatrix4x4(g_deltaTime, RA_X);
-	g_World *= Math::RotationMatrix4x4(g_deltaTime, RA_Z);
+	g_World *= Math::RotationMatrix4x4(g_deltaTime, RA_Y);
 
 	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
 
-	g_Graphics.m_deviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_vertexLayout);
 	g_Graphics.m_deviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// select which vertex buffer to display
-	UINT stride = sizeof(SimpleVertex);
-	UINT offset = 0;
-	g_Graphics.m_deviceContext->IASetVertexBuffers(0, 1, &g_vertexBuffer.m_buffer, &stride, &offset);
-	// Set index buffer
-	g_Graphics.m_deviceContext->IASetIndexBuffer(g_indexBuffer.m_buffer , DXGI_FORMAT_R16_UINT, 0);
+	//g_Graphics.m_deviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_inputLayout);
+
+	//// select which vertex buffer to display
+	//UINT stride = sizeof(SimpleVertex);
+	//UINT offset = 0;
+	//g_Graphics.m_deviceContext->IASetVertexBuffers(0, 1, &g_vertexBuffer.m_buffer, &stride, &offset);
+	//// Set index buffer
+	//g_Graphics.m_deviceContext->IASetIndexBuffer(g_indexBuffer.m_buffer, DXGI_FORMAT_R16_UINT, 0);
 
 	// Update variables that change once per frame
 	CBWorld cbWorld;
 	cbWorld.mWorld = Math::Transpose(g_World);
 	g_Graphics.m_deviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
 
-	g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
+	//g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
 	g_Graphics.m_deviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
 	g_Graphics.m_deviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
 	g_Graphics.m_deviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
 
-	g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
-	g_Graphics.m_deviceContext->PSSetShaderResources(0, 1, &g_textureRV.m_texture);
+	//g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
+	//g_Graphics.m_deviceContext->PSSetShaderResources(0, 1, &g_textureRV.m_texture);
 	g_Graphics.m_deviceContext->PSSetSamplers(0, 1, &g_Graphics.m_samplerState);
 
-	g_Graphics.m_deviceContext->DrawIndexed(36, 0, 0);
+	g_ModelList.at(0)->render(g_Graphics.m_deviceContext);
+
+	//g_Graphics.m_deviceContext->DrawIndexed(36, 0, 0);
 
 	// switch the back buffer and the front buffer
 	g_Graphics.m_swapchain->Present(0, 0);
@@ -348,7 +537,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				(void**)&pBuffer);
 			// Perform error handling here!
 
-			hr = g_Graphics.m_device->CreateRenderTargetView(pBuffer, NULL,
+			hr = g_pD3DDevice->CreateRenderTargetView(pBuffer, NULL,
 				&g_Graphics.m_renderTarget.m_renderTarget);
 			// Perform error handling here!
 			pBuffer->Release();
@@ -421,6 +610,8 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 	InitD3D(g_hWnd);
 	InitPipeline();
 	InitContent();
+
+	LoadModelFromFile();
 
 	// enter the main loop:
 	// this struct holds Windows event messages

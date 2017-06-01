@@ -1,4 +1,5 @@
 #include "Model.h"
+#include "DirectXManager.h"
 
 Model::Model()
 {
@@ -10,32 +11,32 @@ Model::~Model()
 
 }
 
-void Model::createModel(string _path, aiNode * _node, const aiScene * _scene, ID3D11Device * _device, VertexShader * _vertexShader, FragmentShader * _pixelShader)
+void Model::createModel(string _path, const aiNode& _node, const aiScene* _scene, const GraphicDevice* _device, VertexShader* _vertexShader, FragmentShader* _pixelShader)
 {
 	//sacamos los meshes de un modelo en especifico dentro de la escena
-	for (uint i = 0; i < _node->mNumMeshes; i++)
+	for (uint i = 0; i < _node.mNumMeshes; i++)
 	{
-		createMesh(_scene->mMeshes[_node->mMeshes[i]], _device);
-
+		createMesh(_device,*_scene->mMeshes[_node.mMeshes[i]]);
 
 		if (_scene->HasMaterials())
 		{
-			assignMeshMaterial(_scene->mMaterials[_scene->mMeshes[_node->mMeshes[i]]->mMaterialIndex], i, _path.c_str(), _vertexShader, _pixelShader);
+			assignMeshMaterial(_scene->mMaterials[_scene->mMeshes[_node.mMeshes[i]]->mMaterialIndex], i, _path.c_str(), _vertexShader, _pixelShader);
 		}
 	}
 
-	getTriangles(_node, _scene);
+	getTriangles(const_cast<aiNode*>(&_node), _scene);
 
 	setBox();
 
-	setTransformMatrix(&_node->mTransformation);
+	setTransformMatrix(const_cast<aiMatrix4x4*>(&_node.mTransformation));
 }
 
-void Model::createMesh(aiMesh * _mesh, ID3D11Device * _device)
+void Model::createMesh(const GraphicDevice* _device, const aiMesh& _mesh)
 {
-	m_meshes.push_back(new Mesh);
-
-	m_meshes.back()->createMesh(*_mesh, _device);
+	ID3D11Device* pD3DDevice = reinterpret_cast<ID3D11Device*>(_device->getPtr());
+	Mesh* pMesh = new Mesh();
+	pMesh->createMesh(_device, _mesh);
+	m_meshes.push_back(pMesh);
 }
 
 void Model::assignMeshMaterial(aiMaterial * _material, int _index, string _path, VertexShader * _vertexShader, FragmentShader * _pixelShader)
@@ -81,11 +82,11 @@ void Model::assignMeshMaterial(aiMaterial * _material, int _index, string _path,
 			if (TexturePath.back() != '.')
 				TexturePath.push_back('.');
 
-			NewTexture->m_ID.Something = (ID3D11Device*)m_ID.Something;
+			NewTexture->m_ID.Something = m_ID.Something;
 			NewTexture->m_ID.strName = TexturePath;
 			NewTexture->m_ID.strFileName = TexturePath + "dds";
 			NewTexture->m_ID.strRoute = _path + TexturePath + "dds";
-			NewTexture->loadFromFile((ID3D11Device*)NewTexture->m_ID.Something, NewTexture->m_ID.strRoute);
+			NewTexture->loadFromFile(reinterpret_cast<ID3D11Device*>(NewTexture->m_ID.Something), NewTexture->m_ID.strRoute);
 			NewTexture->init();
 		}
 

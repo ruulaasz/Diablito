@@ -56,12 +56,14 @@ HRESULT DirectXManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, 
 	sd.SampleDesc.Count = _sampleDesc;
 	sd.SampleDesc.Quality = 0;
 	sd.Windowed = TRUE;
+	
+	ID3D11Device** pDevice = reinterpret_cast<ID3D11Device**>(m_device.getReference());
 
 	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
 	{
 		m_driverType = driverTypes[driverTypeIndex];
 		hr = D3D11CreateDeviceAndSwapChain(NULL, m_driverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
-			D3D11_SDK_VERSION, &sd, &m_swapchain, &m_device, &m_featureLevel, &m_deviceContext);
+			D3D11_SDK_VERSION, &sd, &m_swapchain, pDevice, &m_featureLevel, &m_deviceContext);
 		if (SUCCEEDED(hr))
 			break;
 	}
@@ -79,8 +81,10 @@ HRESULT DirectXManager::createRenderTargetView()
 	if (FAILED(hr))
 		return hr;
 
+	ID3D11Device* pDevice = reinterpret_cast<ID3D11Device*>(m_device.getPtr());
+
 	// use the back buffer address to create the render target
-	hr = m_device->CreateRenderTargetView(pBackBuffer, NULL, &m_renderTarget.m_renderTarget);
+	hr = pDevice->CreateRenderTargetView(pBackBuffer, NULL, &m_renderTarget.m_renderTarget);
 	pBackBuffer->Release();
 	if (FAILED(hr))
 		return hr;
@@ -106,7 +110,10 @@ HRESULT DirectXManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize,
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	descDepth.CPUAccessFlags = _CPUAccessFlags;
 	descDepth.MiscFlags = _MiscFlags;
-	hr = m_device->CreateTexture2D(&descDepth, NULL, &m_depthStencil);
+
+	ID3D11Device* pDevice = reinterpret_cast<ID3D11Device*>(m_device.getPtr());
+
+	hr = pDevice->CreateTexture2D(&descDepth, NULL, &m_depthStencil);
 	if (FAILED(hr))
 		return hr;
 
@@ -116,7 +123,7 @@ HRESULT DirectXManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize,
 	descDSV.Format = descDepth.Format;
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
-	hr = m_device->CreateDepthStencilView(m_depthStencil, &descDSV, &m_depthStencilView);
+	hr = pDevice->CreateDepthStencilView(m_depthStencil, &descDSV, &m_depthStencilView);
 	if (FAILED(hr))
 		return hr;
 
@@ -150,5 +157,5 @@ void DirectXManager::cleanDevice()
 	if (m_depthStencilView) m_depthStencilView->Release();
 	if (m_renderTarget.m_renderTarget) m_renderTarget.m_renderTarget->Release();
 	if (m_swapchain) m_swapchain->Release();
-	if (m_device) m_device->Release();
+	m_device.Release();
 }

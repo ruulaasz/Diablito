@@ -1,19 +1,19 @@
 #include "IndexBuffer.h"
+#include "DirectXManager.h"
 
 IndexBuffer::IndexBuffer()
 {
-	m_indexNumber = 0;
-	m_indexArray = NULL;
+	
 }
 
 IndexBuffer::~IndexBuffer()
 {
-
+	destroy();
 }
 
 void IndexBuffer::destroy()
 {
-
+	m_indexArray.clear();
 }
 
 HRESULT IndexBuffer::loadIndexFromMesh(aiMesh & _mesh)
@@ -21,9 +21,7 @@ HRESULT IndexBuffer::loadIndexFromMesh(aiMesh & _mesh)
 	if (&_mesh == NULL)
 		return S_FALSE;
 
-	m_indexNumber = _mesh.mNumFaces * 3;
-
-	m_indexArray = new unsigned int[m_indexNumber];
+	m_indexArray.reserve(_mesh.mNumFaces * 3);
 
 	int l = 0;
 
@@ -36,30 +34,51 @@ HRESULT IndexBuffer::loadIndexFromMesh(aiMesh & _mesh)
 		}
 	}
 
-	if (!m_indexArray)
+	if (m_indexArray.empty())
 		return S_FALSE;
-
 
 	return S_OK;
 }
 
-HRESULT IndexBuffer::createIndexBuffer(ID3D11Device * _device, BufferInfo _info)
+HRESULT IndexBuffer::create(const GraphicDevice* pDevice, unsigned int creationFlags)
 {
-	if (m_indexArray != NULL)
+	if (!m_indexArray.empty())
 	{
 		D3D11_BUFFER_DESC bd;
 		ZeroMemory(&bd, sizeof(bd));
 
-		bd.Usage = _info.D3D11Usage;
-		bd.ByteWidth = _info.ByteWidth;
-		bd.BindFlags = _info.BindFlags;
-		bd.CPUAccessFlags = _info.CPUAccesFlag;
+		unsigned int UsageFlag = D3D11_USAGE_DEFAULT;
+		if (creationFlags & IB_CREATE_STATIC) {
+			UsageFlag = D3D11_USAGE_IMMUTABLE;
+		}
+		if (creationFlags & IB_CREATE_DYNAMIC) {
+			UsageFlag = D3D11_USAGE_DYNAMIC;
+		}
+
+		unsigned int CPUAccess = 0;
+		if (creationFlags & CPU_ACCESS_READ) {
+			UsageFlag = D3D11_CPU_ACCESS_READ;
+		}
+		if (creationFlags & CPU_ACCESS_WRITE) {
+			UsageFlag = D3D11_CPU_ACCESS_WRITE;
+		}
+
+		bd.Usage = static_cast<D3D11_USAGE>(UsageFlag);
+		bd.ByteWidth = m_indexArray.size() * sizeof(unsigned int);
+		bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		bd.CPUAccessFlags = CPUAccess;
 
 		D3D11_SUBRESOURCE_DATA InitData;
 		ZeroMemory(&InitData, sizeof(InitData));
-		InitData.pSysMem = *&m_indexArray;
+		InitData.pSysMem = &m_indexArray[0];
 
-		_device->CreateBuffer(&bd, &InitData, &m_buffer);
+		ID3D11Device* pD3DDevice = reinterpret_cast<ID3D11Device*>(pDevice->getPtr());
+		pD3DDevice->CreateBuffer(&bd, &InitData, &m_buffer);
+
+		if (pDevice &&  pD3DDevice)
+			pD3DDevice->CreateBuffer(&bd, &InitData, &m_buffer);
+		else
+			return S_FALSE;
 
 		if (!m_buffer)
 			return S_FALSE;
@@ -68,4 +87,9 @@ HRESULT IndexBuffer::createIndexBuffer(ID3D11Device * _device, BufferInfo _info)
 	}
 
 	return S_FALSE;
+}
+
+void IndexBuffer::addIndex(unsigned int _index)
+{
+	m_indexArray.push_back(_index);
 }

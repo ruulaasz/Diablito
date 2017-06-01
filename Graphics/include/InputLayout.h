@@ -17,5 +17,5 @@ public:
 	D3D11_INPUT_ELEMENT_DESC* m_layoutArray;
 	unsigned int m_layoutElements;
 
-	ID3D11InputLayout* m_vertexLayout;
+	ID3D11InputLayout* m_inputLayout;
 };

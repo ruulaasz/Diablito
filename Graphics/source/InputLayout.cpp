@@ -82,7 +82,7 @@ HRESULT InputLayout::createInputLayout(ID3DBlob* _VSBlob,  ID3D11Device* _device
 	HRESULT HandleResult = S_OK;	//<Manejador de Resultados>//
 	// Create the input layout
 	HandleResult = _device->CreateInputLayout(m_layoutArray, m_layoutElements, _VSBlob->GetBufferPointer(),
-		_VSBlob->GetBufferSize(), &m_vertexLayout);
+		_VSBlob->GetBufferSize(), &m_inputLayout);
 	//_pVSBlob->Release();
 
 	if (FAILED(HandleResult))
@@ -95,6 +95,6 @@ void InputLayout::destroy()
 {
 	delete [] m_layoutArray;
 
-	if (m_vertexLayout)
-		m_vertexLayout->Release();
+	if (m_inputLayout)
+		m_inputLayout->Release();
 }

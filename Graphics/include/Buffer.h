@@ -13,12 +13,11 @@ class Buffer
 {
 public:
 	Buffer();
-	~Buffer();
+	virtual ~Buffer();
 
-	virtual void init() = 0;
-	virtual void destroy() = 0;
+	virtual void init() {};
+	virtual void destroy() {};
 
 	ID3D11Buffer* m_buffer;
-
 	HRESULT createBuffer(ID3D11Device* _device, D3D11_BUFFER_DESC* _desc, D3D11_SUBRESOURCE_DATA* _initData = NULL);
 };

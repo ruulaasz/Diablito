@@ -2,14 +2,15 @@
 #include <vector>
 #include "Mesh.h"
 
-using namespace std;
-
 struct Triangle
 {
 	VertexInfo m_vertex[3];
 
 	Triangle() {}
 };
+
+using std::vector;
+class GraphicDevice;
 
 class Model
 {
@@ -24,8 +25,8 @@ public:
 	omAABB m_boundingBox;
 	ID m_ID;
 
-	virtual void createModel(string _path, aiNode* _node, const aiScene* _scene, ID3D11Device* _device, VertexShader* _vertexShader, FragmentShader* _pixelShader);
-	virtual void createMesh(aiMesh* _mesh, ID3D11Device* _device);
+	virtual void createModel(string _path, const aiNode& _node, const aiScene* _scene, const GraphicDevice* _device, VertexShader* _vertexShader, FragmentShader* _pixelShader);
+	virtual void createMesh(const GraphicDevice* _device, const aiMesh& _mesh);
 	virtual void assignMeshMaterial(aiMaterial* _material, int _index, string _path, VertexShader* _vertexShader, FragmentShader* _pixelShader);
 	virtual void setTransformMatrix(aiMatrix4x4* _transformMatrix);
 	virtual void getTriangles(aiNode* _node, const aiScene* _scene);

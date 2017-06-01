@@ -30,6 +30,7 @@
     <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\RenderTarget.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\StaticModel.h" />
     <ClInclude Include="include\Texture.h" />
     <ClInclude Include="include\VertexBuffer.h" />
     <ClInclude Include="include\VertexShader.h" />
@@ -46,6 +47,7 @@
     <ClCompile Include="source\Model.cpp" />
     <ClCompile Include="source\RenderTarget.cpp" />
     <ClCompile Include="source\Shader.cpp" />
+    <ClCompile Include="source\StaticModel.cpp" />
     <ClCompile Include="source\Texture.cpp" />
     <ClCompile Include="source\VertexBuffer.cpp" />
     <ClCompile Include="source\VertexShader.cpp" />

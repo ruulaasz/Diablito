@@ -4,6 +4,39 @@
 #include "VertexShader.h"
 #include "RenderTarget.h"
 
+class GraphicDevice
+{
+ public:
+	void* getPtr() const {
+		return m_device;
+	}
+
+	void** getReference() {
+		return &m_device;
+	}
+
+	void Release()
+	{
+		if (m_device)
+		{
+			m_device = NULL;
+		}
+	}
+
+	GraphicDevice()
+	{
+		m_device = NULL;
+	}
+
+	~GraphicDevice()
+	{
+		Release();
+	}
+	
+ private:
+	void* m_device;
+};
+
 class DirectXManager
 {
 public:
@@ -11,7 +44,7 @@ public:
 	~DirectXManager();
 
 	IDXGISwapChain* m_swapchain;					// the pointer to the swap chain interface
-	ID3D11Device* m_device;							// the pointer to our Direct3D device interface
+	GraphicDevice m_device;							// the pointer to our Direct3D device interface
 	ID3D11DeviceContext* m_deviceContext;			// the pointer to our Direct3D device context
 	RenderTarget m_renderTarget;					// global declaration
 	VertexShader m_vertexShader;					// the vertex shader

@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "DirectXManager.h"
 
 Mesh::Mesh()
 {
@@ -14,7 +15,7 @@ void Mesh::render(ID3D11DeviceContext * _immediateContext)
 {
 	//Seteamos el Shader asignado al Modelo 
 	_immediateContext->VSSetShader(m_Material->m_vertexShader->m_vertexShader, NULL, 0);
-	_immediateContext->IASetInputLayout(m_Material->m_vertexShader->m_inputLayout.m_vertexLayout);
+	_immediateContext->IASetInputLayout(m_Material->m_vertexShader->m_inputLayout.m_inputLayout);
 
 	//Seteamos el Shader Perteneciente al modelo
 	_immediateContext->PSSetShader(m_Material->m_pixelShader->m_fragmentShader, NULL, 0);
@@ -33,37 +34,39 @@ void Mesh::render(ID3D11DeviceContext * _immediateContext)
 	_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	//Imprimimos el mesh
-	_immediateContext->DrawIndexed(m_IndexBuffer.m_indexNumber, 0, 0);
+	_immediateContext->DrawIndexed(m_IndexBuffer.getIndexSize(), 0, 0);
 }
 
-HRESULT Mesh::createMesh(aiMesh & _mesh, ID3D11Device * _device)
+HRESULT Mesh::createMesh(const GraphicDevice* pDevice, const aiMesh& _mesh)
 {
 	HRESULT hr = S_OK;
 	BufferInfo Info;
 
-	hr = m_IndexBuffer.loadIndexFromMesh(_mesh);
+	hr = m_IndexBuffer.loadIndexFromMesh(const_cast<aiMesh&>(_mesh));
 	if (hr == S_FALSE)
 		return S_FALSE;
 
 	Info.D3D11Usage = D3D11_USAGE_DEFAULT;
-	Info.ByteWidth = sizeof(unsigned int) * m_IndexBuffer.m_indexNumber;
+	Info.ByteWidth = sizeof(unsigned int) * m_IndexBuffer.getIndexSize();
 	Info.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	Info.CPUAccesFlag = 0;
 
-	hr = m_IndexBuffer.createIndexBuffer(_device, Info);
+	ID3D11Device* pD3DDevice = reinterpret_cast<ID3D11Device*>(pDevice->getPtr());
+
+	hr = m_IndexBuffer.create(pDevice);
 	if (hr == S_FALSE)
 		return S_FALSE;
 
-	hr = m_VertexBuffer.loadVertexFromMesh(_mesh);
+	hr = m_VertexBuffer.loadVertexFromMesh(const_cast<aiMesh&>(_mesh));
 	if (hr == S_FALSE)
 		return S_FALSE;
 
 	Info.D3D11Usage = D3D11_USAGE_DEFAULT;
-	Info.ByteWidth = sizeof(VertexInfo) * m_VertexBuffer.m_vertexNumber;
+	Info.ByteWidth = sizeof(VertexInfo) * m_VertexBuffer.getVertexSize();
 	Info.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	Info.CPUAccesFlag = 0;
 
-	m_VertexBuffer.createVertexBuffer(_device, Info);
+	m_VertexBuffer.create(pDevice);
 
 	return S_OK;
 }
