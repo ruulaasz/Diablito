@@ -15,12 +15,6 @@ void Mesh::render(const GraphicDeviceContext* _immediateContext)
 {
 	ID3D11DeviceContext* pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(_immediateContext->getPtr());
 
-	//Seteamos el Shader asignado al Modelo 
-	pDeviceContext->VSSetShader(m_Material->m_vertexShader->m_vertexShader, NULL, 0);
-	pDeviceContext->IASetInputLayout(m_Material->m_vertexShader->m_inputLayout.m_inputLayout);
-
-	//Seteamos el Shader Perteneciente al modelo
-	pDeviceContext->PSSetShader(m_Material->m_pixelShader->m_fragmentShader, NULL, 0);
 	pDeviceContext->PSSetShaderResources(0, 8, m_Material->m_textures);
 
 	//Seteamos el VertexBuffer del mesh

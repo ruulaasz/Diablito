@@ -6,9 +6,6 @@ Material::Material()
 	{
 		m_textures[i] = NULL;
 	}
-
-	m_vertexShader = NULL;
-	m_pixelShader = NULL;
 }
 
 Material::~Material()

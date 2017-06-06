@@ -36,8 +36,5 @@ public:
 	omVector3D m_Emissive;
 	omVector3D m_Reflective;
 
-	FragmentShader* m_pixelShader;
-	VertexShader* m_vertexShader;
-
 	ID3D11ShaderResourceView* m_textures[TextureType_MAXTEXTURES];
 };

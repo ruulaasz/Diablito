@@ -4,6 +4,8 @@
 
 using namespace std;
 
+class GraphicDevice;
+
 class Texture
 {
 public:
@@ -14,5 +16,5 @@ public:
 
 	void init();
 	void destroy();
-	void loadFromFile(ID3D11Device* _device, string _route);
+	void loadFromFile(GraphicDevice* _device, string _route);
 };

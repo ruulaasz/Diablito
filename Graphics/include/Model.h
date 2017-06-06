@@ -3,7 +3,6 @@
 #include "Mesh.h"
 
 using std::vector;
-class GraphicDevice;
 class GraphicDeviceContext;
 
 class Model

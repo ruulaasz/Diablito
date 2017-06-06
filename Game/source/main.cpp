@@ -2,13 +2,12 @@
 #include <tchar.h>
 #include <windows.h>
 #include <DirectXTex.h>
+#include <ModelLoader.h>
 #include <Omicron_Math.h>
 #include <GraphicManager.h>
 #include <ConstantBuffer.h>
 #include <VertexBuffer.h>
 #include <IndexBuffer.h>
-#include <Importer.hpp>
-#include <postprocess.h>
 #include <StaticModel.h>
 
 //define the screen resolution
@@ -17,12 +16,6 @@
 
 using namespace OmicronSDK;
 using namespace DirectX;
-
-struct SimpleVertex
-{
-	omVector3D Pos;
-	omVector2D Tex;
-};
 
 struct CBView
 {
@@ -39,6 +32,11 @@ struct CBWorld
 	omMatrix4D mWorld;
 };
 
+struct CBColor
+{
+	omVector4D mColor;
+};
+
 // global declarations
 GraphicManager g_Graphics;
 
@@ -48,16 +46,13 @@ HWND g_hWnd = NULL;
 ConstantBuffer g_pCBView;
 ConstantBuffer g_pCBProj;
 ConstantBuffer g_pCBWorld;
+ConstantBuffer g_pCBColor;
 
 omMatrix4D  g_World;
 omMatrix4D  g_View;
 omMatrix4D  g_Projection;
 
 float g_deltaTime = 0.0f;
-
-//Carga de contenido por Assimp
-Assimp::Importer g_importer;
-const aiScene* g_scene;
 
 //lista de modelos cargadas
 using std::vector;
@@ -69,6 +64,8 @@ ID3D11DeviceContext* g_pDeviceContext;
 ID3D11DepthStencilView* g_pDepthStencilView;
 ID3D11SamplerState* g_pSamplerState;
 D3D11_VIEWPORT* g_pViewport;
+
+ModelLoader g_modelLoader;
 
 // this function initializes and prepares Direct3D for use
 HRESULT InitD3D(HWND hWnd)
@@ -92,9 +89,6 @@ HRESULT InitD3D(HWND hWnd)
 	g_pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(g_Graphics.m_deviceContext.getPtr());
 	g_pDepthStencilView = reinterpret_cast<ID3D11DepthStencilView*>(g_Graphics.m_depthStencilView.getPtr());
 	g_pSamplerState= reinterpret_cast<ID3D11SamplerState*>(g_Graphics.m_samplerState.getPtr());
-
-	// set the render target as the back buffer
-	g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, g_pDepthStencilView);
 
 	g_Graphics.setViewport();
 
@@ -154,6 +148,7 @@ HRESULT InitContent()
 	bd.ByteWidth = sizeof(CBView);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
+
 	hr = g_pCBView.createDirectX(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
@@ -165,6 +160,11 @@ HRESULT InitContent()
 
 	bd.ByteWidth = sizeof(CBWorld);
 	hr = g_pCBWorld.createDirectX(&g_Graphics.m_device, &bd);
+	if (FAILED(hr))
+		return hr;
+
+	bd.ByteWidth = sizeof(CBColor);
+	hr = g_pCBColor.createDirectX(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
@@ -189,133 +189,16 @@ HRESULT InitContent()
 
 bool LoadScene(std::string& pFile)
 {
-	HRESULT HandleResult;
+	Model* pModel = new StaticModel();
+	pModel = g_modelLoader.LoadStaticModel(pFile);
 
-	g_scene = g_importer.ReadFile(pFile, aiProcess_ConvertToLeftHanded);
-
-	if (!g_scene || !g_scene->HasMeshes() )
+	if(!pModel)
 	{
 		return false;
 	}
 
-	string texturesPath = pFile;
-
-	size_t i = texturesPath.size() - 1;
-	for (; i >= 0; i--)
-	{
-		if (texturesPath.at(i) == '/' || texturesPath.at(i) == '\\')
-			break;
-
-		texturesPath.pop_back();
-	}
-
-	//Carguemos meshes
-	VertexData myVertex;
-	Model* pModel = new StaticModel();
-	pModel->m_meshes.resize(g_scene->mNumMeshes);
-
-	bool hasMaterials = g_scene->HasMaterials();
-
-	for (size_t i = 0; i < g_scene->mNumMeshes; ++i) 
-	{
-		pModel->m_meshes[i] = new Mesh();
-
-		if (g_scene->mMeshes[i]->HasPositions()) 
-		{
-			for (size_t j = 0; j < g_scene->mMeshes[i]->mNumVertices; ++j) 
-			{
-				aiMesh* paiMesh = g_scene->mMeshes[i];
-
-				myVertex.pos.X = paiMesh->mVertices[j].x;
-				myVertex.pos.Y = paiMesh->mVertices[j].y;
-				myVertex.pos.Z = paiMesh->mVertices[j].z;
-				myVertex.pos.W = 1;
-
-				if (g_scene->mMeshes[i]->HasNormals()) 
-				{
-					myVertex.norm.X = paiMesh->mNormals[j].x;
-					myVertex.norm.Y = paiMesh->mNormals[j].y;
-					myVertex.norm.Z = paiMesh->mNormals[j].z;
-				}
-
-				if (g_scene->mMeshes[i]->HasTextureCoords(0)) 
-				{
-					myVertex.tex.X = paiMesh->mTextureCoords[0][j].x;
-					myVertex.tex.Y = paiMesh->mTextureCoords[0][j].y;
-				}
-
-				pModel->m_meshes[i]->m_VertexBuffer.addVertex(myVertex);
-			}
-
-			pModel->m_meshes[i]->m_VertexBuffer.create(&g_Graphics.m_device);
-
-			Material* pMaterial = new Material();
-			pMaterial->m_pixelShader = &g_Graphics.m_pixelShader;
-			pMaterial->m_vertexShader = &g_Graphics.m_vertexShader;
-
-			if (hasMaterials)
-			{
-				aiString pPath;
-				g_scene->mMaterials[g_scene->mMeshes[i]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &pPath);
-
-				if (pPath.length > 0)
-				{
-					string textureName;
-					string temp = pPath.C_Str();
-
-					int i = temp.size() - 1;
-					for (; i >= 0; --i)
-					{
-						if (temp.at(i) == '/' || temp.at(i) == '\\')
-							break;
-
-						textureName.push_back(temp.at(i));
-					}
-
-					string finalPath = texturesPath;
-
-					size_t j = textureName.size() - 1;
-					for (; j >= 0; j--)
-					{
-						if (textureName.at(j) == '.')
-							break;
-
-						finalPath.push_back(textureName.at(j));
-					}
-
-					finalPath += ".dds";
-
-					// Load the Texture
-					DirectX::ScratchImage Image;
-					std::wstring widestr = std::wstring(finalPath.begin(), finalPath.end());
-					DirectX::LoadFromDDSFile(widestr.c_str(), NULL, NULL, Image);
-
-					Texture* newTexture = new Texture();
-
-					DirectX::CreateShaderResourceView(g_pD3DDevice, Image.GetImages(), Image.GetImageCount(), Image.GetMetadata(), &newTexture->m_texture);
-
-					pMaterial->m_textures[TextureType_DIFFUSE] =newTexture->m_texture; //g_textureRV.m_texture; 
-				}
-			}
-
-			pModel->m_meshes[i]->m_Material = pMaterial;
-		}
-
-		if (g_scene->mMeshes[i]->HasFaces())
-		{
-			for (size_t j = 0; j < g_scene->mMeshes[i]->mNumFaces; ++j)
-			{
-				for (size_t k = 0; k < g_scene->mMeshes[i]->mFaces->mNumIndices; k++)
-				{
-					pModel->m_meshes[i]->m_IndexBuffer.addIndex(g_scene->mMeshes[i]->mFaces[j].mIndices[k]);
-				}
-			}
-
-			pModel->m_meshes[i]->m_IndexBuffer.create(&g_Graphics.m_device);
-		}
-	}
-
 	g_ModelList.push_back(pModel);
+	return true;
 }
 
 void LoadModelFromFile()
@@ -391,9 +274,6 @@ void RenderFrame(void)
 	g_World = Math::Identity4D();
 	g_World *= Math::RotationMatrix4x4(g_deltaTime/3, RA_Y);
 
-	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
-
 	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Update variables that change once per frame
@@ -401,11 +281,29 @@ void RenderFrame(void)
 	cbWorld.mWorld = Math::Transpose(g_World);
 	g_pDeviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
 
+	CBColor cbColor;
+	cbColor.mColor = omVector4D(0.0f, 0.0f, 0.2f, 1.0f);
+	g_pDeviceContext->UpdateSubresource(g_pCBColor.m_buffer, 0, NULL, &cbColor, 0, 0);
+
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
 	g_pDeviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
 	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(3, 1, &g_pCBColor.m_buffer);
 
 	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
+
+	// set the render target as the back buffer
+	g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, g_pDepthStencilView);
+
+	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
+
+	//Seteamos el VShader asignado al Modelo 
+	g_pDeviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
+	g_pDeviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_inputLayout);
+
+	//Seteamos el PShader Perteneciente al modelo
+	g_pDeviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
 
 	g_ModelList.at(0)->render(&g_Graphics.m_deviceContext);
 
@@ -521,6 +419,7 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 	InitD3D(g_hWnd);
 	InitPipeline();
 	InitContent();
+	g_modelLoader.init(&g_Graphics.m_device);
 
 	LoadModelFromFile();
 
