@@ -4,7 +4,7 @@
 #include "Material.h"
 #include "Texture.h"
 
-class GraphicDevice;
+class GraphicDeviceContext;
 
 class Mesh
 {
@@ -16,7 +16,7 @@ public:
 	IndexBuffer m_IndexBuffer;
 	Material* m_Material;
 
-	void render(ID3D11DeviceContext* _immediateContext);
-	HRESULT createMesh(const GraphicDevice* pDevice, const aiMesh& _mesh);
-	void assignNewTexture(Texture& _texture, FragmentShader* _pixelShader, VertexShader* _vertexShader, int _slot);
+	void render(const GraphicDeviceContext* _immediateContext);
+	void assignNewTexture(const Texture* _texture, unsigned int _slot);
+	void assignNewMaterial(Material* _material);
 };

@@ -7,6 +7,23 @@
 
 using namespace OmicronSDK;
 
+enum TextureType
+{
+	TextureType_NONE =0,
+	TextureType_DIFFUSE,
+	TextureType_SPECULAR,
+	TextureType_AMBIENT,
+	TextureType_EMiSSIVE,
+	TextureType_HEIGHT,
+	TextureType_NORMALS,
+	TextureType_SHININESS,
+	TextureType_OPACITY,
+	TextureType_DISPLACEMENT,
+	TextureType_LIGHTMAP,
+	TextureType_REFLECTION,
+	TextureType_MAXTEXTURES
+};
+
 class Material
 {
 public:
@@ -22,7 +39,5 @@ public:
 	FragmentShader* m_pixelShader;
 	VertexShader* m_vertexShader;
 
-	ID3D11ShaderResourceView* m_textures[aiTextureType_UNKNOWN];
-
-	void createMaterial(aiMaterial* _material, FragmentShader* _pixelShader, VertexShader* _vertexShader);
+	ID3D11ShaderResourceView* m_textures[TextureType_MAXTEXTURES];
 };

@@ -45,11 +45,6 @@ GraphicManager g_Graphics;
 HINSTANCE g_hInst = NULL;
 HWND g_hWnd = NULL;
 
-Texture g_textureRV;
-
-IndexBuffer g_indexBuffer;
-VertexBuffer g_vertexBuffer;
-
 ConstantBuffer g_pCBView;
 ConstantBuffer g_pCBProj;
 ConstantBuffer g_pCBWorld;
@@ -137,91 +132,8 @@ HRESULT InitContent()
 {
 	HRESULT hr = S_OK;
 
-	// create a triangle using the VERTEX struct
-	SimpleVertex OurVertices[] =
-	{
-		{ omVector3D(-1.0f, 1.0f, -1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(1.0f, 1.0f, -1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(1.0f, 1.0f, 1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(-1.0f, 1.0f, 1.0f), omVector2D(0.0f, 1.0f) },
-
-		{ omVector3D(-1.0f, -1.0f, -1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(1.0f, -1.0f, -1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(1.0f, -1.0f, 1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(-1.0f, -1.0f, 1.0f), omVector2D(0.0f, 1.0f) },
-
-		{ omVector3D(-1.0f, -1.0f, 1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(-1.0f, -1.0f, -1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(-1.0f, 1.0f, -1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(-1.0f, 1.0f, 1.0f), omVector2D(0.0f, 1.0f) },
-
-		{ omVector3D(1.0f, -1.0f, 1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(1.0f, -1.0f, -1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(1.0f, 1.0f, -1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(1.0f, 1.0f, 1.0f), omVector2D(0.0f, 1.0f) },
-
-		{ omVector3D(-1.0f, -1.0f, -1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(1.0f, -1.0f, -1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(1.0f, 1.0f, -1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(-1.0f, 1.0f, -1.0f), omVector2D(0.0f, 1.0f) },
-
-		{ omVector3D(-1.0f, -1.0f, 1.0f), omVector2D(0.0f, 0.0f) },
-		{ omVector3D(1.0f, -1.0f, 1.0f), omVector2D(1.0f, 0.0f) },
-		{ omVector3D(1.0f, 1.0f, 1.0f), omVector2D(1.0f, 1.0f) },
-		{ omVector3D(-1.0f, 1.0f, 1.0f), omVector2D(0.0f, 1.0f) },
-	};
-
-	// create the vertex buffer
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;                // write access access by CPU and GPU
-	bd.ByteWidth = sizeof(SimpleVertex) * 24;             // size is the VERTEX struct * 3
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;       // use as a vertex buffer
-	bd.CPUAccessFlags = 0;						// allow CPU to write in buffer
-
-	D3D11_SUBRESOURCE_DATA InitData;
-	ZeroMemory(&InitData, sizeof(InitData));
-	InitData.pSysMem = OurVertices;
-
-	hr = g_vertexBuffer.createDirectX(&g_Graphics.m_device, &bd, &InitData);
-	if (FAILED(hr))
-	{
-		MessageBoxW(NULL,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create index buffer
-	WORD indices[] =
-	{
-		3,1,0,
-		2,1,3,
-
-		6,4,5,
-		7,4,6,
-
-		11,9,8,
-		10,9,11,
-
-		14,12,13,
-		15,12,14,
-
-		19,17,16,
-		18,17,19,
-
-		22,20,21,
-		23,20,22
-	};
-
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(WORD) * 36;
-	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	InitData.pSysMem = indices;
-
-	hr = g_indexBuffer.createDirectX(&g_Graphics.m_device, &bd, &InitData);
-	if (FAILED(hr))
-		return hr;
 
 	//	// Create the sample state
 	D3D11_SAMPLER_DESC sampDesc;
@@ -256,22 +168,12 @@ HRESULT InitContent()
 	if (FAILED(hr))
 		return hr;
 
-	// Load the Texture
-	DirectX::ScratchImage Image;
-	hr = DirectX::LoadFromDDSFile(L"seafloor.dds", NULL, NULL, Image);
-	if (FAILED(hr))
-		return hr;
-
-	hr = DirectX::CreateShaderResourceView(g_pD3DDevice, Image.GetImages(), Image.GetImageCount(), Image.GetMetadata(), &g_textureRV.m_texture);
-	if (FAILED(hr))
-		return hr;
-
 	// Initialize the world matrices
 	g_World = Math::Identity4D();
 
 	// Initialize the view matrix
-	omVector4D Eye(0.0f, 80.0f, -100.0f, 1.0f);
-	omVector4D At(0.0f, 80.0f, 0.0f, 1.0f);
+	omVector4D Eye(0.0f, 1.0f, -1.0f, 1.0f);
+	omVector4D At(0.0f, 1.0f, 0.0f, 1.0f);
 	omVector4D Up(0.0f, 1.0f, 0.0f, 0.0f);
 
 	g_View = Math::LookAtLH(Eye, At, Up);
@@ -282,7 +184,7 @@ HRESULT InitContent()
 	g_Graphics.m_height = rc.bottom - rc.top;
 
 	// Initialize the projection matrix
-	g_Projection = Math::PerspectiveFovLH(Math::PI / 2.0f, g_Graphics.m_width / (FLOAT)g_Graphics.m_height, 0.01f, 10000.0f);
+	g_Projection = Math::PerspectiveFovLH(Math::PI / 2.0f, g_Graphics.m_width / (FLOAT)g_Graphics.m_height, 0.1f, 1000.0f);
 }
 
 bool LoadScene(std::string& pFile)
@@ -296,10 +198,23 @@ bool LoadScene(std::string& pFile)
 		return false;
 	}
 
+	string texturesPath = pFile;
+
+	size_t i = texturesPath.size() - 1;
+	for (; i >= 0; i--)
+	{
+		if (texturesPath.at(i) == '/' || texturesPath.at(i) == '\\')
+			break;
+
+		texturesPath.pop_back();
+	}
+
 	//Carguemos meshes
 	VertexData myVertex;
 	Model* pModel = new StaticModel();
 	pModel->m_meshes.resize(g_scene->mNumMeshes);
+
+	bool hasMaterials = g_scene->HasMaterials();
 
 	for (size_t i = 0; i < g_scene->mNumMeshes; ++i) 
 	{
@@ -310,9 +225,11 @@ bool LoadScene(std::string& pFile)
 			for (size_t j = 0; j < g_scene->mMeshes[i]->mNumVertices; ++j) 
 			{
 				aiMesh* paiMesh = g_scene->mMeshes[i];
+
 				myVertex.pos.X = paiMesh->mVertices[j].x;
 				myVertex.pos.Y = paiMesh->mVertices[j].y;
 				myVertex.pos.Z = paiMesh->mVertices[j].z;
+				myVertex.pos.W = 1;
 
 				if (g_scene->mMeshes[i]->HasNormals()) 
 				{
@@ -323,9 +240,8 @@ bool LoadScene(std::string& pFile)
 
 				if (g_scene->mMeshes[i]->HasTextureCoords(0)) 
 				{
-					myVertex.norm.X = paiMesh->mNormals[j].x;
-					myVertex.norm.Y = paiMesh->mNormals[j].y;
-					myVertex.norm.Z = paiMesh->mNormals[j].z;
+					myVertex.tex.X = paiMesh->mTextureCoords[0][j].x;
+					myVertex.tex.Y = paiMesh->mTextureCoords[0][j].y;
 				}
 
 				pModel->m_meshes[i]->m_VertexBuffer.addVertex(myVertex);
@@ -336,7 +252,51 @@ bool LoadScene(std::string& pFile)
 			Material* pMaterial = new Material();
 			pMaterial->m_pixelShader = &g_Graphics.m_pixelShader;
 			pMaterial->m_vertexShader = &g_Graphics.m_vertexShader;
-			pMaterial->m_textures[0] = g_textureRV.m_texture;
+
+			if (hasMaterials)
+			{
+				aiString pPath;
+				g_scene->mMaterials[g_scene->mMeshes[i]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &pPath);
+
+				if (pPath.length > 0)
+				{
+					string textureName;
+					string temp = pPath.C_Str();
+
+					int i = temp.size() - 1;
+					for (; i >= 0; --i)
+					{
+						if (temp.at(i) == '/' || temp.at(i) == '\\')
+							break;
+
+						textureName.push_back(temp.at(i));
+					}
+
+					string finalPath = texturesPath;
+
+					size_t j = textureName.size() - 1;
+					for (; j >= 0; j--)
+					{
+						if (textureName.at(j) == '.')
+							break;
+
+						finalPath.push_back(textureName.at(j));
+					}
+
+					finalPath += ".dds";
+
+					// Load the Texture
+					DirectX::ScratchImage Image;
+					std::wstring widestr = std::wstring(finalPath.begin(), finalPath.end());
+					DirectX::LoadFromDDSFile(widestr.c_str(), NULL, NULL, Image);
+
+					Texture* newTexture = new Texture();
+
+					DirectX::CreateShaderResourceView(g_pD3DDevice, Image.GetImages(), Image.GetImageCount(), Image.GetMetadata(), &newTexture->m_texture);
+
+					pMaterial->m_textures[TextureType_DIFFUSE] =newTexture->m_texture; //g_textureRV.m_texture; 
+				}
+			}
 
 			pModel->m_meshes[i]->m_Material = pMaterial;
 		}
@@ -356,52 +316,6 @@ bool LoadScene(std::string& pFile)
 	}
 
 	g_ModelList.push_back(pModel);
-
-	/*
-	aiNode* Node;
-	queue<aiNode*>NodeList;
-	queue<aiNode*>NodeWithMesh;
-	NodeList.push(g_scene->mRootNode);
-
-	while (!NodeList.empty())
-	{
-		Node = NodeList.front();
-		//Agregamos los nodos hijos a la lista
-		for (unsigned i = 0; i < Node->mNumChildren; i++)
-		{
-			NodeList.push(*&Node->mChildren[i]);
-		}
-		//Checamos si el visitado actual tiene meshes
-		if (Node->mNumMeshes > 0)
-		{//Los meshes contenidos en este nodo son un modelo
-			NodeWithMesh.push(*&Node);
-		}
-		//Sacamos al nodo visitado
-		NodeList.pop();
-	}
-
-	while (pFile.back() != '\\')
-	{
-		pFile.pop_back();
-	}
-
-	pFile.pop_back();
-
-	while (!NodeWithMesh.empty())
-	{
-		Model* pModel = new StaticModel();
-		
-		Node = NodeWithMesh.front();
-
-		pModel->m_ID.strName = Node->mName.C_Str();
-		pModel->m_ID.Something = reinterpret_cast<void*>(g_Graphics.m_device);
-		pModel->createModel(pFile, *Node, g_scene, g_Graphics.m_device, &g_Graphics.m_vertexShader, &g_Graphics.m_pixelShader);
-		
-		NodeWithMesh.pop();
-
-		g_ModelList.push_back(pModel);
-	}
-	*/
 }
 
 void LoadModelFromFile()
@@ -475,39 +389,25 @@ void RenderFrame(void)
 
 	// Rotate cube around the origin
 	g_World = Math::Identity4D();
-	g_World *= Math::RotationMatrix4x4(g_deltaTime, RA_Y);
+	g_World *= Math::RotationMatrix4x4(g_deltaTime/3, RA_Y);
 
 	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
 
 	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	//g_Graphics.m_deviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_inputLayout);
-
-	//// select which vertex buffer to display
-	//UINT stride = sizeof(SimpleVertex);
-	//UINT offset = 0;
-	//g_Graphics.m_deviceContext->IASetVertexBuffers(0, 1, &g_vertexBuffer.m_buffer, &stride, &offset);
-	//// Set index buffer
-	//g_Graphics.m_deviceContext->IASetIndexBuffer(g_indexBuffer.m_buffer, DXGI_FORMAT_R16_UINT, 0);
-
 	// Update variables that change once per frame
 	CBWorld cbWorld;
 	cbWorld.mWorld = Math::Transpose(g_World);
 	g_pDeviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
 
-	//g_Graphics.m_deviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
 	g_pDeviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
 	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
 
-	//g_Graphics.m_deviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
-	//g_Graphics.m_deviceContext->PSSetShaderResources(0, 1, &g_textureRV.m_texture);
 	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
 
-	g_ModelList.at(0)->render(g_pDeviceContext);
-
-	//g_Graphics.m_deviceContext->DrawIndexed(36, 0, 0);
+	g_ModelList.at(0)->render(&g_Graphics.m_deviceContext);
 
 	// switch the back buffer and the front buffer
 	g_pSwapChain->Present(0, 0);
