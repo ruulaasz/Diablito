@@ -7,7 +7,7 @@ Shader::Shader()
 
 Shader::~Shader()
 {
-
+	//m_shaderBlob->Release();
 }
 
 HRESULT Shader::compileShaderFromFile(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3DBlob** _ppBlobOut)

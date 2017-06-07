@@ -3,7 +3,6 @@
 VertexShader::VertexShader()
 {
 	m_vertexShader = NULL;
-	m_shaderBlob = NULL;
 }
 
 VertexShader::~VertexShader()
@@ -29,6 +28,5 @@ HRESULT VertexShader::createVertexShader(WCHAR* _szFileName, LPCSTR _szEntryPoin
 
 void VertexShader::destroy()
 {
-	m_shaderBlob->Release();
-	//m_pVertexShader->Release();
+	//m_vertexShader->Release();
 }

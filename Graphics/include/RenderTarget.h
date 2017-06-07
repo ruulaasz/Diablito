@@ -9,4 +9,3 @@ public:
 
 	ID3D11RenderTargetView* m_renderTarget;
 };
-

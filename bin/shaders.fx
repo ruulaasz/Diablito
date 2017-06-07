@@ -16,11 +16,6 @@ cbuffer cbWorld : register(b2)
 	matrix World;
 };
 
-cbuffer cbColor : register(b3)
-{
-	float4 Color;
-};
-
 struct VS_INPUT
 {
 	float4 Pos : POSITION;
@@ -34,7 +29,12 @@ struct PS_INPUT
 	float2 Tex : TEXCOORD0;
 	float3 Normal : TEXCOORD1;
 	float2 Depth : TEXCOORD2;
-	float4 Color : TEXCOORD3;
+};
+
+struct PS_OUTPUT
+{
+	float4 Color1 : SV_Target0;
+	float4 Color2 : SV_Target1;
 };
 
 PS_INPUT VS(VS_INPUT input)
@@ -53,16 +53,15 @@ PS_INPUT VS(VS_INPUT input)
 
 	output.Depth = viewpos.z;
 
-	output.Color = Color;
-
 	return output;
 }
 
-float4 PS(PS_INPUT input) : SV_Target0
+PS_OUTPUT PS(PS_INPUT input)
 {
-	//float normDepth = input.Depth / 200.0f;
-	//return float4(normDepth, normDepth, normDepth, 1.0f);
-	//return float4(input.Normal, 1.0f);
-	float4 c = txDiffuse.Sample(samLinear, input.Tex);
-	return c;//+input.Color;
+	PS_OUTPUT output = (PS_OUTPUT)0;
+
+	output.Color1 = txDiffuse.Sample(samLinear, input.Tex);
+	output.Color2 = float4(input.Normal, 1);
+
+	return output;
 }

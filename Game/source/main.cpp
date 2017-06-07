@@ -1,4 +1,3 @@
-#include <queue>
 #include <tchar.h>
 #include <windows.h>
 #include <DirectXTex.h>
@@ -11,11 +10,12 @@
 #include <StaticModel.h>
 
 //define the screen resolution
-#define SCREEN_WIDTH  800
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH  1280
+#define SCREEN_HEIGHT 720
 
 using namespace OmicronSDK;
 using namespace DirectX;
+using std::vector;
 
 struct CBView
 {
@@ -53,9 +53,9 @@ omMatrix4D  g_View;
 omMatrix4D  g_Projection;
 
 float g_deltaTime = 0.0f;
+float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
 
-//lista de modelos cargadas
-using std::vector;
+//lista de modelos cargados
 vector<Model*> g_ModelList;
 
 ID3D11Device* g_pD3DDevice;
@@ -66,60 +66,53 @@ ID3D11SamplerState* g_pSamplerState;
 D3D11_VIEWPORT* g_pViewport;
 
 ModelLoader g_modelLoader;
+bool prueba;
+
+Texture2D g_renderTexture[8];
+RenderTarget g_renderTarget[8];
+VertexShader g_vertexShader[8];
+FragmentShader g_pixelShader[8];
+
+unsigned int g_currentVertexShader = 0;
+unsigned int g_currentPixelShader = 0;
+unsigned int g_currentRenderTarget = 0;
 
 // this function initializes and prepares Direct3D for use
 HRESULT InitD3D(HWND hWnd)
 {
 	HRESULT hr = S_OK;
 
-	hr = g_Graphics.createDeviceAndSwapchain(hWnd);
-	if (FAILED(hr))
-		return hr;
-
-	hr = g_Graphics.createRenderTargetView();
-	if (FAILED(hr))
-		return hr;
-
-	hr = g_Graphics.createDepthStencilView();
-	if (FAILED(hr))
-		return hr;
+	g_Graphics.init(hWnd);
 
 	g_pD3DDevice = reinterpret_cast<ID3D11Device*>(g_Graphics.m_device.getPtr());
 	g_pSwapChain = reinterpret_cast<IDXGISwapChain*>(g_Graphics.m_swapchain.getPtr());
 	g_pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(g_Graphics.m_deviceContext.getPtr());
 	g_pDepthStencilView = reinterpret_cast<ID3D11DepthStencilView*>(g_Graphics.m_depthStencilView.getPtr());
 	g_pSamplerState= reinterpret_cast<ID3D11SamplerState*>(g_Graphics.m_samplerState.getPtr());
-
-	g_Graphics.setViewport();
-
 	g_pViewport = reinterpret_cast<D3D11_VIEWPORT*>(g_Graphics.m_viewport.getPtr());
-
-	g_pDeviceContext->RSSetViewports(1, g_pViewport);
 
 	return hr;
 }
 
-HRESULT InitPipeline()
+HRESULT LoadShaders()
 {
 	HRESULT hr = S_OK;
 
-	hr = g_Graphics.m_vertexShader.createVertexShader(L"shaders.fx", "VS", "vs_5_0", g_pD3DDevice);
-	hr = g_Graphics.m_pixelShader.createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_pD3DDevice);
+	hr = g_vertexShader[0].createVertexShader(L"shaders.fx", "VS", "vs_5_0", g_pD3DDevice);
+	hr = g_vertexShader[0].m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[0].m_shaderBlob);
+	hr = g_pixelShader[0].createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_pD3DDevice);
 
-	// set the shader objects
-	g_pDeviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, 0, 0);
-	g_pDeviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, 0, 0);
+	hr = g_vertexShader[1].createVertexShader(L"test.fx", "VS", "vs_5_0", g_pD3DDevice);
+	hr = g_vertexShader[1].m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[0].m_shaderBlob);
+	hr = g_pixelShader[1].createFragmentShader(L"test.fx", "PS", "ps_5_0", g_pD3DDevice);
 
-	hr = g_Graphics.m_vertexShader.m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_Graphics.m_vertexShader.m_shaderBlob);
+	g_renderTarget[0] = g_Graphics.m_renderTarget;
+	g_renderTexture[0] = g_Graphics.m_backBuffer;
 
-	g_Graphics.m_vertexShader.m_inputLayout.createInputLayout(g_Graphics.m_vertexShader.m_shaderBlob, g_pD3DDevice);
+	g_renderTexture[1].CreateAsRenderTarget(&g_Graphics.m_device, g_Graphics.m_width, g_Graphics.m_height);
+	g_Graphics.createRenderTargetView(&g_renderTarget[1], &g_renderTexture[1]);
 
-	if (FAILED(hr))
-	{
-		MessageBoxW(NULL,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
+	return hr;
 }
 
 HRESULT InitContent()
@@ -172,7 +165,7 @@ HRESULT InitContent()
 	g_World = Math::Identity4D();
 
 	// Initialize the view matrix
-	omVector4D Eye(0.0f, 1.0f, -1.0f, 1.0f);
+	omVector4D Eye(0.0f, 1.0f, -1.5f, 1.0f);
 	omVector4D At(0.0f, 1.0f, 0.0f, 1.0f);
 	omVector4D Up(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -185,11 +178,13 @@ HRESULT InitContent()
 
 	// Initialize the projection matrix
 	g_Projection = Math::PerspectiveFovLH(Math::PI / 2.0f, g_Graphics.m_width / (FLOAT)g_Graphics.m_height, 0.1f, 1000.0f);
+
+	return hr;
 }
 
 bool LoadScene(std::string& pFile)
 {
-	Model* pModel = new StaticModel();
+	Model* pModel;
 	pModel = g_modelLoader.LoadStaticModel(pFile);
 
 	if(!pModel)
@@ -272,9 +267,7 @@ void RenderFrame(void)
 
 	// Rotate cube around the origin
 	g_World = Math::Identity4D();
-	g_World *= Math::RotationMatrix4x4(g_deltaTime/3, RA_Y);
-
-	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	g_World *= Math::RotationMatrix4x4(g_deltaTime / 3, RA_Y);
 
 	// Update variables that change once per frame
 	CBWorld cbWorld;
@@ -282,7 +275,7 @@ void RenderFrame(void)
 	g_pDeviceContext->UpdateSubresource(g_pCBWorld.m_buffer, 0, NULL, &cbWorld, 0, 0);
 
 	CBColor cbColor;
-	cbColor.mColor = omVector4D(0.0f, 0.0f, 0.2f, 1.0f);
+	cbColor.mColor = omVector4D(0.3f, 0.0f, 0.2f, 1.0f);
 	g_pDeviceContext->UpdateSubresource(g_pCBColor.m_buffer, 0, NULL, &cbColor, 0, 0);
 
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
@@ -290,23 +283,20 @@ void RenderFrame(void)
 	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
 	g_pDeviceContext->VSSetConstantBuffers(3, 1, &g_pCBColor.m_buffer);
 
+	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
+	g_pDeviceContext->RSSetViewports(1, g_pViewport);
 
-	// set the render target as the back buffer
-	g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, g_pDepthStencilView);
-
-	float colorbk[4] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	g_Graphics.clearScreen(&g_Graphics.m_renderTarget, const_cast<float*>(colorbk));
+	g_pDeviceContext->OMSetRenderTargets(1, &g_renderTarget[0].m_renderTarget, g_pDepthStencilView);
 
 	//Seteamos el VShader asignado al Modelo 
-	g_pDeviceContext->VSSetShader(g_Graphics.m_vertexShader.m_vertexShader, NULL, 0);
-	g_pDeviceContext->IASetInputLayout(g_Graphics.m_vertexShader.m_inputLayout.m_inputLayout);
-
+	g_pDeviceContext->VSSetShader(g_vertexShader[g_currentVertexShader].m_vertexShader, NULL, 0);
+	g_pDeviceContext->IASetInputLayout(g_vertexShader[g_currentVertexShader].m_inputLayout.m_inputLayout);
 	//Seteamos el PShader Perteneciente al modelo
-	g_pDeviceContext->PSSetShader(g_Graphics.m_pixelShader.m_fragmentShader, NULL, 0);
+	g_pDeviceContext->PSSetShader(g_pixelShader[g_currentPixelShader].m_fragmentShader, NULL, 0);
 
+	g_Graphics.clearScreen(&g_renderTarget[g_currentRenderTarget], const_cast<float*>(colorbk));
 	g_ModelList.at(0)->render(&g_Graphics.m_deviceContext);
-
 	// switch the back buffer and the front buffer
 	g_pSwapChain->Present(0, 0);
 }
@@ -326,39 +316,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	} break;
 
 	case WM_SIZE:
-		if (g_pSwapChain)
-		{
-			g_pDeviceContext->OMSetRenderTargets(0, 0, 0);
-
-			// Release all outstanding references to the swap chain's buffers.
-			g_Graphics.m_renderTarget.m_renderTarget->Release();
-
-			HRESULT hr;
-			// Preserve the existing buffer count and format.
-			// Automatically choose the width and height to match the client rect for HWNDs.
-			hr = g_pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, 0);
-
-			// Perform error handling here!
-
-			// Get buffer and create a render-target-view.
-			ID3D11Texture2D* pBuffer;
-			hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
-				(void**)&pBuffer);
-			// Perform error handling here!
-
-			hr = g_pD3DDevice->CreateRenderTargetView(pBuffer, NULL,
-				&g_Graphics.m_renderTarget.m_renderTarget);
-			// Perform error handling here!
-			pBuffer->Release();
-
-			g_pDeviceContext->OMSetRenderTargets(1, &g_Graphics.m_renderTarget.m_renderTarget, NULL);
-
-			// Set up the viewport.
-			g_Graphics.setViewport();
-
-			g_pDeviceContext->RSSetViewports(1, g_pViewport);
-		}
-		return 1;
+	{
+		
+	} break;
+		
 	}
 
 	// Handle any messages the switch statement didn't
@@ -372,8 +333,6 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 	LPWSTR lpCmdLine,
 	int nCmdShow)
 {
-	// the handle for the window, filled by a function
-	HWND hWnd;
 	// this struct holds information for the window class
 	WNDCLASSEXW wc;
 	// clear out the window class for use
@@ -417,7 +376,7 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 	ShowWindow(g_hWnd, nCmdShow);
 
 	InitD3D(g_hWnd);
-	InitPipeline();
+	LoadShaders();
 	InitContent();
 	g_modelLoader.init(&g_Graphics.m_device);
 

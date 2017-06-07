@@ -4,6 +4,8 @@ GraphicManager::GraphicManager()
 {
 	m_driverType = D3D_DRIVER_TYPE_NULL;
 	m_featureLevel = D3D_FEATURE_LEVEL_11_0;
+	m_width = 100;
+	m_height = 100;
 }
 
 GraphicManager::~GraphicManager()
@@ -74,25 +76,20 @@ HRESULT GraphicManager::createDeviceAndSwapchain(HWND _hwnd, UINT _bufferCount, 
 	return hr;
 }
 
-HRESULT GraphicManager::createRenderTargetView()
+HRESULT GraphicManager::createRenderTargetView(RenderTarget* _renderTargetView, Texture2D* _renderTexture)
 {
 	HRESULT hr = S_OK;
 
 	IDXGISwapChain* pSwapChain = reinterpret_cast<IDXGISwapChain*>(m_swapchain.getPtr());
-
-	// get the address of the back buffer
-	ID3D11Texture2D *pBackBuffer = NULL;
-	hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-	if (FAILED(hr))
-		return hr;
-
 	ID3D11Device* pDevice = reinterpret_cast<ID3D11Device*>(m_device.getPtr());
 
-	// use the back buffer address to create the render target
-	hr = pDevice->CreateRenderTargetView(pBackBuffer, NULL, &m_renderTarget.m_renderTarget);
-	pBackBuffer->Release();
+	// get the address of the back buffer
+	hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&_renderTexture->m_texture);
 	if (FAILED(hr))
 		return hr;
+
+	// use the back buffer address to create the render target
+	hr = pDevice->CreateRenderTargetView(_renderTexture->m_texture, NULL, &_renderTargetView->m_renderTarget);
 
 	return hr;
 }
@@ -138,7 +135,7 @@ HRESULT GraphicManager::createDepthStencilView(UINT _MipLevels, UINT _ArraySize,
 	return hr;
 }
 
-void GraphicManager::setViewport(FLOAT _MinDepth, FLOAT _MaxDepth, FLOAT _TopLeftX, FLOAT _TopLeftY)
+void GraphicManager::createViewport(FLOAT _MinDepth, FLOAT _MaxDepth, FLOAT _TopLeftX, FLOAT _TopLeftY)
 {
 	// Set the viewport
 
@@ -167,11 +164,17 @@ void GraphicManager::clearScreen(RenderTarget* _renderTarget, float _color[4])
 void GraphicManager::cleanDevice()
 {
 	m_deviceContext.Release();
-	if (m_vertexShader.m_vertexShader) m_vertexShader.m_vertexShader->Release();
-	if (m_pixelShader.m_fragmentShader) m_pixelShader.m_fragmentShader->Release();
 	if (m_depthStencil.m_texture) m_depthStencil.m_texture->Release();
 	m_depthStencilView.Release();
 	if (m_renderTarget.m_renderTarget) m_renderTarget.m_renderTarget->Release();
 	m_swapchain.Release();
 	m_device.Release();
+}
+
+void GraphicManager::init(HWND _hwnd)
+{
+	createDeviceAndSwapchain(_hwnd);
+	createRenderTargetView(&m_renderTarget, &m_backBuffer);
+	createDepthStencilView();
+	createViewport();
 }

@@ -8,7 +8,7 @@ public:
 	~FragmentShader();
 
 	virtual void init(){};
-	virtual void destroy(){};
+	virtual void destroy();
 
 	ID3D11PixelShader* m_fragmentShader;
 

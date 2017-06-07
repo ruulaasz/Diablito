@@ -2,7 +2,9 @@
 
 InputLayout::InputLayout()
 {
-
+	m_layoutArray = NULL;
+	m_inputLayout = NULL;
+	m_layoutElements = 0;
 }
 
 InputLayout::~InputLayout()
@@ -10,7 +12,7 @@ InputLayout::~InputLayout()
 	destroy();
 }
 
-HRESULT InputLayout::CreateInputLayoutFromVertexShaderSignature(ID3DBlob* _pShaderBlob)
+HRESULT InputLayout::CreateInputLayoutFromVertexShaderSignature(ID3D11Device* _device, ID3DBlob* _pShaderBlob)
 {
 	// Reflect shader info
 	ID3D11ShaderReflection* pVertexShaderReflection = NULL;
@@ -74,7 +76,7 @@ HRESULT InputLayout::CreateInputLayoutFromVertexShaderSignature(ID3DBlob* _pShad
 	if (!m_layoutArray)
 		return S_FALSE;
 
-	return S_OK;
+	return createInputLayout(_pShaderBlob, _device);
 }
 
 HRESULT InputLayout::createInputLayout(ID3DBlob* _VSBlob,  ID3D11Device* _device)

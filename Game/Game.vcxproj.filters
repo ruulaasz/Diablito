@@ -22,5 +22,8 @@
     <FxCompile Include="..\bin\shaders.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="..\bin\test.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

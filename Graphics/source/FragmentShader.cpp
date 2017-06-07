@@ -2,12 +2,12 @@
 
 FragmentShader::FragmentShader()
 {
-
+	m_fragmentShader = NULL;
 }
 
 FragmentShader::~FragmentShader()
 {
-
+	destroy();
 }
 
 HRESULT FragmentShader::createFragmentShader(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3D11Device* _device)
@@ -24,4 +24,9 @@ HRESULT FragmentShader::createFragmentShader(WCHAR* _szFileName, LPCSTR _szEntry
 	}
 
 	return HandleResult;
+}
+
+void FragmentShader::destroy()
+{
+	//m_fragmentShader->Release();
 }

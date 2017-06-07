@@ -3,7 +3,7 @@
 
 Mesh::Mesh()
 {
-	
+	m_Material = NULL;
 }
 
 Mesh::~Mesh()

@@ -3,8 +3,8 @@
 
 enum LoadMode
 {
-	Load_DEFAULT = 0,
-	Load_ASSIMP = 1
+	LoadWith_DEFAULT = 0,
+	LoadWith_ASSIMP = 1
 };
 
 class GraphicDevice;
@@ -15,11 +15,10 @@ public:
 	ModelLoader();
 	~ModelLoader();
 
-	Model* LoadStaticModel(string _path, LoadMode _mode = Load_DEFAULT);
+	Model* LoadStaticModel(string _path, LoadMode _mode = LoadWith_DEFAULT);
 
 	void init(GraphicDevice* _device);
 
 private:
 	GraphicDevice* m_device;
 };
-

@@ -20,6 +20,6 @@ public:
 
 	virtual void init() {};
 	virtual void destroy() {};
-	virtual void update(float _deltaTime) {};
+	virtual void update(float _deltaTime) { _deltaTime; };
 	virtual void render(const GraphicDeviceContext* _immediateContext);
 };

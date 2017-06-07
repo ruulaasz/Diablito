@@ -7,5 +7,5 @@ RenderTarget::RenderTarget()
 
 RenderTarget::~RenderTarget()
 {
-	m_renderTarget = NULL;
+
 }
