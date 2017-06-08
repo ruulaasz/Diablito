@@ -1,33 +1,58 @@
 #pragma once
-#include "Buffer.h"
-#include <scene.h>
 #include <vector>
-
-class GraphicDevice;
-using std::vector;
+#include <scene.h>
+#include "Buffer.h"
 
 #define CPU_ACCESS_DEFAULT	0x00000000
 #define CPU_ACCESS_READ		0x00000001
 #define CPU_ACCESS_WRITE	0x00000002
 
-#define IB_CREATE_DEFAULT	0x00000004	//Default
-#define IB_CREATE_STATIC	0x00000008	//Static Buffer
-#define IB_CREATE_DYNAMIC	0x00000010	//Buffer dinamico
+#define IB_CREATE_DEFAULT	0x00000004	
+#define IB_CREATE_STATIC	0x00000008	
+#define IB_CREATE_DYNAMIC	0x00000010	
 
+class GraphicDevice;
+using std::vector;
+
+/**
+* Create and manage an index buffer
+*/
 class IndexBuffer : public Buffer
 {
-public:
-	IndexBuffer();
-	~IndexBuffer();
+ public:
+  IndexBuffer();
+  ~IndexBuffer();
 
-	virtual void destroy() override;
+  /**
+  * Creates a graphic index buffer using Directx11.
+  *
+  * @param _device
+  * Reference to a graphic device
+  *
+  * @param _creationFlags
+  * Set of flags for the creation of the buffer
+  *
+  */
+  void create(const GraphicDevice* _device, unsigned int _creationFlags = IB_CREATE_DEFAULT | CPU_ACCESS_DEFAULT);
 
-	//HRESULT loadIndexFromMesh(aiMesh& _mesh);
-	HRESULT create(const GraphicDevice* pDevice, unsigned int creationFlags = IB_CREATE_DEFAULT | CPU_ACCESS_DEFAULT);
+  /**
+  * Adds an index to the index array
+  *
+  * @param _index
+  * the index itself
+  *
+  */
+  void addIndex(unsigned int _index);
 
-	void addIndex(unsigned int _index);
-	size_t getIndexSize() { return m_indexArray.size(); }
+  /**
+  * Returns the size of the index buffer
+  *
+  * @return
+  * The size of the index vector
+  *
+  */
+  size_t getIndexSize() { return m_indexArray.size(); }
 
-private:
-	vector<unsigned int> m_indexArray;
+ private:
+  vector<unsigned int> m_indexArray;
 };

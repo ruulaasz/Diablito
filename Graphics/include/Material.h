@@ -1,12 +1,15 @@
 #pragma once
-#include "Omicron_Math.h"
+#include <scene.h>
 #include <types.h>
+#include "Omicron_Math.h"
 #include "FragmentShader.h"
 #include "VertexShader.h"
-#include <scene.h>
 
 using namespace OmicronSDK;
 
+/**
+* Enum of the texture types allowed
+*/
 enum TextureType
 {
 	TextureType_NONE =0,
@@ -24,17 +27,14 @@ enum TextureType
 	TextureType_MAXTEXTURES
 };
 
+/**
+* A container for a material object
+*/
 class Material
 {
-public:
-	Material();
-	~Material();
-
-	omVector3D m_AmbientColor;
-	omVector3D m_Diffuse;
-	omVector3D m_Specular;
-	omVector3D m_Emissive;
-	omVector3D m_Reflective;
-
-	ID3D11ShaderResourceView* m_textures[TextureType_MAXTEXTURES];
+ public:
+  Material();
+  ~Material();
+  
+  ID3D11ShaderResourceView* m_textures[TextureType_MAXTEXTURES];
 };

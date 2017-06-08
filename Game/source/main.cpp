@@ -66,7 +66,6 @@ ID3D11SamplerState* g_pSamplerState;
 D3D11_VIEWPORT* g_pViewport;
 
 ModelLoader g_modelLoader;
-bool prueba;
 
 Texture2D g_renderTexture[8];
 RenderTarget g_renderTarget[8];
@@ -98,19 +97,22 @@ HRESULT LoadShaders()
 {
 	HRESULT hr = S_OK;
 
-	hr = g_vertexShader[0].createVertexShader(L"shaders.fx", "VS", "vs_5_0", g_pD3DDevice);
-	hr = g_vertexShader[0].m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[0].m_shaderBlob);
-	hr = g_pixelShader[0].createFragmentShader(L"shaders.fx", "PS", "ps_5_0", g_pD3DDevice);
+	g_vertexShader[0].createVertexShader(g_pD3DDevice, L"shaders.fx", "VS", "vs_5_0");
+	g_vertexShader[0].m_inputLayout.createInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[0].m_shaderBlob);
+	g_pixelShader[0].createFragmentShader(&g_Graphics.m_device, L"shaders.fx", "PS", "ps_5_0");
 
-	hr = g_vertexShader[1].createVertexShader(L"test.fx", "VS", "vs_5_0", g_pD3DDevice);
-	hr = g_vertexShader[1].m_inputLayout.CreateInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[0].m_shaderBlob);
-	hr = g_pixelShader[1].createFragmentShader(L"test.fx", "PS", "ps_5_0", g_pD3DDevice);
+	g_vertexShader[1].createVertexShader(g_pD3DDevice, L"test.fx", "VS", "vs_5_0");
+	g_vertexShader[1].m_inputLayout.createInputLayoutFromVertexShaderSignature(g_pD3DDevice, g_vertexShader[1].m_shaderBlob);
+	g_pixelShader[1].createFragmentShader(&g_Graphics.m_device, L"test.fx", "PS", "ps_5_0");
 
 	g_renderTarget[0] = g_Graphics.m_renderTarget;
 	g_renderTexture[0] = g_Graphics.m_backBuffer;
 
-	g_renderTexture[1].CreateAsRenderTarget(&g_Graphics.m_device, g_Graphics.m_width, g_Graphics.m_height);
-	g_Graphics.createRenderTargetView(&g_renderTarget[1], &g_renderTexture[1]);
+	for (size_t i = 1; i < 8; ++i)
+	{
+		g_renderTexture[i].CreateAsRenderTarget(&g_Graphics.m_device, g_Graphics.m_width, g_Graphics.m_height);
+		g_Graphics.createRenderTargetView(&g_renderTarget[i], &g_renderTexture[i]);
+	}
 
 	return hr;
 }
@@ -142,22 +144,22 @@ HRESULT InitContent()
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
 
-	hr = g_pCBView.createDirectX(&g_Graphics.m_device, &bd);
+	g_pCBView.create(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBProj);
-	hr = g_pCBProj.createDirectX(&g_Graphics.m_device, &bd);
+	g_pCBProj.create(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBWorld);
-	hr = g_pCBWorld.createDirectX(&g_Graphics.m_device, &bd);
+	g_pCBWorld.create(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
 	bd.ByteWidth = sizeof(CBColor);
-	hr = g_pCBColor.createDirectX(&g_Graphics.m_device, &bd);
+	g_pCBColor.create(&g_Graphics.m_device, &bd);
 	if (FAILED(hr))
 		return hr;
 
@@ -251,6 +253,24 @@ void LoadModelFromFile()
 // this is the function used to render a single frame
 void RenderFrame(void)
 {	
+	ID3D11RenderTargetView* pRenderTargets[8];
+	for (size_t i = 0; i < 8; ++i)
+	{
+		pRenderTargets[i] = g_renderTarget[i].m_renderTarget;
+	}
+
+	g_pDeviceContext->OMSetRenderTargets(8, pRenderTargets, g_pDepthStencilView);
+	g_pDeviceContext->OMSetDepthStencilState(g_Graphics.m_depthStencilState, 1);
+	g_pDeviceContext->RSSetState(g_Graphics.m_rasterizerState[2]);
+	g_pDeviceContext->RSSetViewports(1, g_pViewport);
+
+	for (size_t i = 0; i < 8; ++i)
+	{
+		g_Graphics.clearScreen(&g_renderTarget[i], const_cast<float*>(colorbk));
+	}
+
+	g_pDeviceContext->ClearDepthStencilView(g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
 	static DWORD dwTimeStart = 0;
 	DWORD dwTimeCur = GetTickCount();
 	if (dwTimeStart == 0)
@@ -278,24 +298,19 @@ void RenderFrame(void)
 	cbColor.mColor = omVector4D(0.3f, 0.0f, 0.2f, 1.0f);
 	g_pDeviceContext->UpdateSubresource(g_pCBColor.m_buffer, 0, NULL, &cbColor, 0, 0);
 
-	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
-	g_pDeviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
-	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
-	g_pDeviceContext->VSSetConstantBuffers(3, 1, &g_pCBColor.m_buffer);
-
-	g_pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
-	g_pDeviceContext->RSSetViewports(1, g_pViewport);
-
-	g_pDeviceContext->OMSetRenderTargets(1, &g_renderTarget[0].m_renderTarget, g_pDepthStencilView);
-
 	//Seteamos el VShader asignado al Modelo 
 	g_pDeviceContext->VSSetShader(g_vertexShader[g_currentVertexShader].m_vertexShader, NULL, 0);
 	g_pDeviceContext->IASetInputLayout(g_vertexShader[g_currentVertexShader].m_inputLayout.m_inputLayout);
 	//Seteamos el PShader Perteneciente al modelo
 	g_pDeviceContext->PSSetShader(g_pixelShader[g_currentPixelShader].m_fragmentShader, NULL, 0);
 
-	g_Graphics.clearScreen(&g_renderTarget[g_currentRenderTarget], const_cast<float*>(colorbk));
+	g_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCBView.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(1, 1, &g_pCBProj.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(2, 1, &g_pCBWorld.m_buffer);
+	g_pDeviceContext->VSSetConstantBuffers(3, 1, &g_pCBColor.m_buffer);
+
+	g_pDeviceContext->PSSetSamplers(0, 1, &g_pSamplerState);
+	
 	g_ModelList.at(0)->render(&g_Graphics.m_deviceContext);
 	// switch the back buffer and the front buffer
 	g_pSwapChain->Present(0, 0);
@@ -325,7 +340,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	// Handle any messages the switch statement didn't
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
-
 
 // the entry point for any Windows program
 int WINAPI wWinMain(HINSTANCE hInstance,
@@ -380,7 +394,18 @@ int WINAPI wWinMain(HINSTANCE hInstance,
 	InitContent();
 	g_modelLoader.init(&g_Graphics.m_device);
 
-	LoadModelFromFile();
+	string path = "resources\\models\\Bassilisk\\Basillisk.dae";
+	LoadScene(path);
+
+	Texture Normals;
+	path = "resources\\models\\Bassilisk\\c3270_n.dds";
+	Normals.loadFromFile(&g_Graphics.m_device, path);
+
+	g_ModelList.at(0)->assignMeshTexture(&Normals, TextureType_NORMALS, 0);
+
+	path = "resources\\models\\Bassilisk\\c3270_s.dds";
+	Normals.loadFromFile(&g_Graphics.m_device, path);
+	g_ModelList.at(0)->assignMeshTexture(&Normals, TextureType_SPECULAR, 0);
 
 	// enter the main loop:
 	// this struct holds Windows event messages

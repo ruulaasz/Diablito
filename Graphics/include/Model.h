@@ -5,21 +5,51 @@
 using std::vector;
 class GraphicDeviceContext;
 
+/**
+* Container for a model object
+*/
 class Model
 {
-public:
-	Model();
-	~Model();
+ public:
+  Model();
+  ~Model();
 
-	vector <Mesh* > m_meshes;
-	omMatrix4D m_transform;
+  /**
+  * Assign a new material to a mesh
+  *
+  * @param _material
+  * Reference to a new material
+  *
+  * @param _index
+  * The index of the mesh recieving the material
+  *
+  */
+  void assignMeshMaterial(Material* _material, unsigned int _index);
 
-	virtual void assignMeshMaterial(Material* _material, unsigned int _index);
-	virtual void assignMeshTexture(Texture* _texture, unsigned int _slot, unsigned int _index);
-	virtual void setTransformMatrix(aiMatrix4x4* _transformMatrix);
+  /**
+  * Assign a new texture to a mesh
+  *
+  * @param _texture
+  * Reference to a new texture
+  *
+  * @param _textureType
+  * The type of the new texture
+  *
+  * @param _index
+  * The index of the mesh recieving the material
+  *
+  */
+  void assignMeshTexture(Texture* _texture, TextureType _textureType, unsigned int _index);
 
-	virtual void init() {};
-	virtual void destroy() {};
-	virtual void update(float _deltaTime) { _deltaTime; };
-	virtual void render(const GraphicDeviceContext* _immediateContext);
+  /**
+  * Render the model
+  *
+  * @param _immediateContext
+  * Reference to a graphic device context
+  *
+  */
+  void render(const GraphicDeviceContext* _immediateContext);
+
+  vector <Mesh* > m_meshes;
+  omMatrix4D m_transform;
 };

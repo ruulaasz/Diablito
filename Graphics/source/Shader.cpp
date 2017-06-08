@@ -2,19 +2,18 @@
 
 Shader::Shader()
 {
-	m_shaderBlob = NULL;
+  m_shaderBlob = nullptr;
 }
 
 Shader::~Shader()
 {
-	//m_shaderBlob->Release();
+	
 }
 
-HRESULT Shader::compileShaderFromFile(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3DBlob** _ppBlobOut)
+void Shader::compileShaderFromFile(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3DBlob** _ppBlobOut)
 {
-	HRESULT hr = S_OK;
+  DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 
-	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined( DEBUG ) || defined( _DEBUG )
 	// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
 	// Setting this flag improves the shader debugging experience, but still allows 
@@ -23,17 +22,18 @@ HRESULT Shader::compileShaderFromFile(WCHAR* _szFileName, LPCSTR _szEntryPoint, 
 	dwShaderFlags |= D3DCOMPILE_DEBUG;
 #endif
 
-	ID3DBlob* pErrorBlob = NULL;
-	hr = D3DCompileFromFile(_szFileName, NULL, NULL, _szEntryPoint, _szShaderModel,
-		dwShaderFlags, 0, _ppBlobOut, &pErrorBlob);
-	if (FAILED(hr))
-	{
-		if (pErrorBlob != NULL)
-			OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
-		if (pErrorBlob) pErrorBlob->Release();
-		return hr;
-	}
-	if (pErrorBlob) pErrorBlob->Release();
+  ID3DBlob* pErrorBlob = nullptr;
+  D3DCompileFromFile(_szFileName, nullptr, nullptr, _szEntryPoint, _szShaderModel, dwShaderFlags, 0, _ppBlobOut, &pErrorBlob);
 
-	return S_OK;
+  if (!_ppBlobOut)
+  {
+    if (pErrorBlob)
+	{
+      OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
+	  pErrorBlob->Release();
+	  throw "CreationFailed D3DCompileFromFile";
+	}
+
+	throw "CreationFailed D3DCompileFromFile";
+  }
 }

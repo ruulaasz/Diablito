@@ -2,7 +2,7 @@
 
 RenderTarget::RenderTarget()
 {
-	m_renderTarget = NULL;
+  m_renderTarget = nullptr;
 }
 
 RenderTarget::~RenderTarget()

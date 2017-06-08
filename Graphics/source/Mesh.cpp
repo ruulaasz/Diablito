@@ -1,9 +1,9 @@
 #include "Mesh.h"
-#include "GraphicManager.h"
+#include "GraphicDeviceContext.h"
 
 Mesh::Mesh()
 {
-	m_Material = NULL;
+  m_material = nullptr;
 }
 
 Mesh::~Mesh()
@@ -13,31 +13,39 @@ Mesh::~Mesh()
 
 void Mesh::render(const GraphicDeviceContext* _immediateContext)
 {
-	ID3D11DeviceContext* pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(_immediateContext->getPtr());
-
-	pDeviceContext->PSSetShaderResources(0, 8, m_Material->m_textures);
-
-	//Seteamos el VertexBuffer del mesh
-	UINT stride = sizeof(VertexData);
-	UINT offset = 0;
-	pDeviceContext->IASetVertexBuffers(0, 1, &m_VertexBuffer.m_buffer, &stride, &offset);
-
-	//Seteamos el index buffer del mesh
-	pDeviceContext->IASetIndexBuffer(m_IndexBuffer.m_buffer, DXGI_FORMAT_R32_UINT, 0);
-
-	//Seteamos la topologia primitiva
-	pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	//Imprimimos el mesh
-	pDeviceContext->DrawIndexed(m_IndexBuffer.getIndexSize(), 0, 0);
+  ID3D11DeviceContext* pDeviceContext = reinterpret_cast<ID3D11DeviceContext*>(_immediateContext->getPtr());
+  if (!pDeviceContext)
+  {
+	throw "NullPointer pDeviceContext";
+  }
+  
+  pDeviceContext->PSSetShaderResources(0, 12, m_material->m_textures);
+  
+  UINT stride = sizeof(VertexData);
+  UINT offset = 0;
+  pDeviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer.m_buffer, &stride, &offset);
+  pDeviceContext->IASetIndexBuffer(m_indexBuffer.m_buffer, DXGI_FORMAT_R32_UINT, 0);
+  pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  
+  pDeviceContext->DrawIndexed(m_indexBuffer.getIndexSize(), 0, 0);
 }
 
-void Mesh::assignNewTexture(const Texture* _texture, unsigned int _slot)
+void Mesh::assignNewTexture(const Texture* _texture, TextureType _textureType)
 {
-	m_Material->m_textures[_slot] = _texture->m_texture;
+  if (!_texture)
+  {
+  	throw "NullPointer _texture";
+  }
+
+  m_material->m_textures[_textureType] = _texture->m_texture;
 }
 
 void Mesh::assignNewMaterial(Material * _material)
 {
-	m_Material = _material;
+  if (!_material)
+  {
+  	throw "NullPointer _material";
+  }
+
+  m_material = _material;
 }

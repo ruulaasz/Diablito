@@ -1,32 +1,34 @@
 #include "FragmentShader.h"
+#include "GraphicDevice.h"
 
 FragmentShader::FragmentShader()
 {
-	m_fragmentShader = NULL;
+  m_fragmentShader = nullptr;
 }
 
 FragmentShader::~FragmentShader()
 {
-	destroy();
+  
 }
 
-HRESULT FragmentShader::createFragmentShader(WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel, ID3D11Device* _device)
+void FragmentShader::createFragmentShader(const GraphicDevice* _device, WCHAR* _szFileName, LPCSTR _szEntryPoint, LPCSTR _szShaderModel)
 {
-	HRESULT HandleResult = S_OK;	//<Manejador de Resultados>//
-	HandleResult = compileShaderFromFile(_szFileName, _szEntryPoint, _szShaderModel, &m_shaderBlob);
-
-	// Create the vertex shader
-	HandleResult = _device->CreatePixelShader(m_shaderBlob->GetBufferPointer(), m_shaderBlob->GetBufferSize(), NULL, &m_fragmentShader);
-	if (FAILED(HandleResult))
-	{
-		m_shaderBlob->Release();
-		return HandleResult;
-	}
-
-	return HandleResult;
-}
-
-void FragmentShader::destroy()
-{
-	//m_fragmentShader->Release();
+  ID3D11Device* pDevice = reinterpret_cast<ID3D11Device*>(_device->getPtr());
+  if (!pDevice)
+  {
+	  throw "NullPointer _device";
+  }
+	
+  compileShaderFromFile(_szFileName, _szEntryPoint, _szShaderModel, &m_shaderBlob);
+  if (!m_shaderBlob)
+  {
+    throw "CreationFailed m_shaderBlob";
+  }
+  
+  pDevice->CreatePixelShader(m_shaderBlob->GetBufferPointer(), m_shaderBlob->GetBufferSize(), nullptr, &m_fragmentShader);
+  if (!m_fragmentShader)
+  {
+  	m_shaderBlob->Release();
+	throw "CreationFailed m_fragmentShader";
+  }
 }
